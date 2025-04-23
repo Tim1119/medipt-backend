@@ -7,7 +7,6 @@ import environ
 from datetime import timedelta
 from pathlib import Path
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -16,11 +15,12 @@ env = environ.Env(DEBUG=(bool, False))
 #---------------------------------------------------------- READING ENV FILES ---------------------------------------------------------
 environ.Env.read_env(BASE_DIR / ".env")
 
+
+
 #----------------------------------------------  PROJECT SETTINGS ---------------------------------------------------------------
 SECRET_KEY=env('SECRET_KEY')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env('ALLOWED_HOSTS').split(" ")
-
 
 
 # Application definition
@@ -34,9 +34,25 @@ DJANGO_APPS = [
     'django.contrib.staticfiles',
 ]
 
-LOCAL_APPS = []
+LOCAL_APPS = [
+    'apps.accounts',
+    'apps.organizations',
+    # 'apps.caregivers',
+    # 'apps.patients',
+    # 'apps.invites',
+]
 
-THIRD_PARTY_APPS = []
+THIRD_PARTY_APPS=[
+    'imagekit',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'drf_standardized_errors',
+    'django_celery_results',
+    'drf_yasg',
+    'corsheaders',
+
+]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS 
 
@@ -60,6 +76,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -71,8 +88,31 @@ TEMPLATES = [
 WSGI_APPLICATION = 'medipt.wsgi.application'
 
 
+# Database
+# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DATABASE_NAME'),         
+        'USER': env('DATABASE_USER'),         
+        'PASSWORD': env('DATABASE_PASSWORD'), 
+        'HOST': env('DATABASE_HOST'),           
+        'PORT': env('DATABASE_PORT'),            
+    }
+}
+
+
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -90,9 +130,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Africa/Lagos'
@@ -101,21 +138,13 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
 # STATICFILES_DIRS = [BASE_DIR / "static",]
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -159,7 +188,16 @@ logging.config.dictConfig(
     }
 )
 
+AUTH_USER_MODEL = 'accounts.User'
 
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('Bearer','JWT'),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=3),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'SIGNING_KEY': env('SECRET_KEY'),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),   
+}
 
 DRF_STANDARDIZED_ERRORS = {"EXCEPTION_FORMATTER_CLASS": "shared.custom_exception_handler.MyExceptionFormatter"}
 
@@ -194,6 +232,7 @@ SIMPLE_JWT = {
     "BLACKLIST_ENABLED": True, 
 }
 
+
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,  # Prevents login redirection
     'SECURITY_DEFINITIONS': {
@@ -204,3 +243,16 @@ SWAGGER_SETTINGS = {
         }
     },
 }
+
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:3000/',
+# ]
+
+
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",  # Frontend URL
+# ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_ALL_ORIGINS = True

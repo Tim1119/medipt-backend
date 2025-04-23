@@ -1,43 +1,22 @@
 from .base import *
 
-# Development-specific settings
-DEBUG = True
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_RESULT_EXPIRES = 3600  # Task state expires after 1 hour
+CELERY_TIMEZONE = 'Africa/Lagos'
 
-# Development database settings
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DATABASE_NAME'),
-        'USER': env('DATABASE_USER'),
-        'PASSWORD': env('DATABASE_PASSWORD'),
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
+REACT_FRONTEND_URL = 'http://localhost:3000'
 
-# Development allowed hosts
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+EMAIL_USE_TLS=True
+EMAIL_HOST=env('DEVELOPMENT_EMAIL_HOST')
+EMAIL_HOST_USER=env('DEVELOPMENT_EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD=env('DEVELOPMENT_EMAIL_HOST_PASSWORD')
+EMAIL_PORT=env('DEVELOPMENT_EMAIL_PORT')
 
-# Development CORS settings
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://localhost:3000",  
+    "http://localhost:5174",  
+    "http://localhost:5173",  
 ]
-
-# Development email settings
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# Development logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
-}

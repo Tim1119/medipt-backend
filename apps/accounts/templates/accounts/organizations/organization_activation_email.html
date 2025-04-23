@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activate Your Organization Account</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            margin: 20px 0;
+        }
+        .footer {
+            background-color: #f1f1f1;
+            color: #333;
+            padding: 10px;
+            text-align: center;
+        }
+        .activation-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Activate Your Account</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{ organization_name }},</p>
+            <p>Thank you for registering your organization with us. To complete your registration, please activate your account by clicking on the link below:</p>
+            <p><a href="{{ activation_link }}" class="activation-link">Activate Your Account</a></p>
+            <p>If you did not sign up for this account, please disregard this email.</p>
+        </div>
+        <div class="footer">
+            <p>Best regards,<br>Medipt<br>No 1, Hill View Side, AgunyI Ironsi Street, Maitaima Abuja</p>
+        </div>
+    </div>
+</body>
+</html>
