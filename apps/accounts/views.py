@@ -49,12 +49,11 @@ class OrganizationSignupView(generics.GenericAPIView):
             raise OrganizationSignupException(detail=serializer.errors)
 
 class VerifyAccount(APIView):
-
     """
     Verifies user account using a token.
     """
-
-    def get(self, request,token):
+    
+    def get(self, request, token):
         if not token:
             raise CustomValidationError("Token is required")
             
@@ -69,8 +68,13 @@ class VerifyAccount(APIView):
             # Fetch user
             user = User.objects.get(id=user_id)
 
+            # Handle already active accounts as a success case, not an error
             if user.is_active:
-                raise AccountAlreadyActiveException()
+                return Response({
+                    "success": True, 
+                    "message": "Account is already active.",
+                    "already_active": True
+                }, status=status.HTTP_200_OK)
 
             # Activate user
             user.is_verified = True
@@ -99,8 +103,7 @@ class VerifyAccount(APIView):
             raise UserDoesNotExistException()
 
         except Exception as e:
-            raise CustomValidationError(detail=f"An unexpected error occurred: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+            raise CustomValidationError(detail=f"An unexpected error occurred: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
 
 class LoginAccountView(generics.GenericAPIView):
@@ -263,7 +266,7 @@ class PasswordResetConfirmView(APIView):
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             user = User.objects.get(id=payload["user_id"])
 
-            # Validate the password using Django’s built-in validators
+            # Validate the password using Django's built-in validators
             try:
                 validate_password(new_password, user=user)
             except ValidationError as e:
