@@ -58,6 +58,7 @@ class VerifyAccount(APIView):
             raise CustomValidationError("Token is required")
             
         try:
+            # Decode the JWT token
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
 
             # Ensure "user_id" exists in payload
@@ -103,7 +104,7 @@ class VerifyAccount(APIView):
             raise UserDoesNotExistException()
 
         except Exception as e:
-            raise CustomValidationError(detail=f"An unexpected error occurred: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+            raise CustomValidationError(detail=f"An unexpected error occurred: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class LoginAccountView(generics.GenericAPIView):
@@ -114,27 +115,34 @@ class LoginAccountView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True) 
         response = Response({"message": "Login successful",**serializer.validated_data}, status=status.HTTP_200_OK)
-        response.set_cookie(
-            key="access_token",
-            value=serializer.validated_data["access_token"],
-            httponly=True,  # Prevent JavaScript access (XSS protection)
-            secure=False,  # Use False for local development (True for production with HTTPS)
-            samesite="Lax",  # Prevent CSRF attacks
-            max_age=timedelta(days=7).total_seconds(),  # 7 days expiration
-        )
-        response.set_cookie(
-            key="refresh_token",
-            value=serializer.validated_data["refresh_token"],
-            httponly=True,
-            secure=False,  # Set True in production
-            samesite="Lax",
-        )
+        response.set_cookie(             
+            key="access_token",             
+            value=serializer.validated_data["access_token"],             
+            httponly=True,             
+            secure=False,  # Will need to be True in production with HTTPS             
+            samesite="Lax",  # Changed from "None" to "Lax"            
+            max_age=int(timedelta(days=7).total_seconds()),             
+            path="/",
+            # Add this line to specify domain explicitly
+            domain="localhost"  # Use "localhost" instead of "127.0.0.1"
+        )         
+        
+        response.set_cookie(             
+            key="refresh_token",             
+            value=serializer.validated_data["refresh_token"],             
+            httponly=True,             
+            secure=False,  # Will need to be True in production with HTTPS            
+            samesite="Lax",  # Changed from "None" to "Lax"            
+            max_age=int(timedelta(days=30).total_seconds()),             
+            path="/",
+            # Add this line to specify domain explicitly
+            domain="localhost"  # Use "localhost" instead of "127.0.0.1"
+        )          
 
         # TODO: Change secure to true before deployment in production
 
         # Set CSRF Token in response header
         response["X-CSRFToken"] = get_token(request)
-
         return response
 
 
