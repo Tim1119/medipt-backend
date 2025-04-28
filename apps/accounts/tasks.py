@@ -15,7 +15,7 @@ import jwt
 def send_organization_activation_email(current_site,organization_email):
     organization = Organization.objects.get(user__email=organization_email)
     token = RefreshToken.for_user(organization.user).access_token
-    activation_link = f"{settings.REACT_FRONTEND_URL}/verify-email/{str(token)}"
+    activation_link = f"{settings.REACT_FRONTEND_URL}/auth/verify-email/{str(token)}"
 
     context = {
         'organization_name': organization.name,
@@ -55,7 +55,7 @@ def send_password_reset_email(user_email):
     }
     reset_token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
-    reset_link = f"{settings.REACT_FRONTEND_URL}/forgot-password/reset-password/{reset_token}"
+    reset_link = f"{settings.REACT_FRONTEND_URL}/auth/reset-password/{reset_token}"
 
     context = {
         "user_name": user.get_full_name if user.get_full_name else user.email,

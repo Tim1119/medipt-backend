@@ -7,7 +7,7 @@ CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 CELERY_RESULT_EXPIRES = 3600  # Task state expires after 1 hour
 CELERY_TIMEZONE = 'Africa/Lagos'
 
-REACT_FRONTEND_URL = 'http://localhost:3000'
+REACT_FRONTEND_URL = 'http://localhost:5173'
 
 EMAIL_USE_TLS=True
 EMAIL_HOST=env('DEVELOPMENT_EMAIL_HOST')
