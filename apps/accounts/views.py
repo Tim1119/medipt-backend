@@ -107,6 +107,46 @@ class VerifyAccount(APIView):
             raise CustomValidationError(detail=f"An unexpected error occurred: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# class LoginAccountView(generics.GenericAPIView):
+#     throttle_classes = [AnonRateThrottle]
+#     serializer_class = LoginSerializer
+
+#     def post(self, request):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True) 
+#         response = Response({"message": "Login successful",**serializer.validated_data}, status=status.HTTP_200_OK)
+#         response.set_cookie(             
+#             key="access_token",             
+#             value=serializer.validated_data["access_token"],             
+#             httponly=True,             
+#             secure=False,  # Will need to be True in production with HTTPS             
+#             samesite="Lax",  # Changed from "None" to "Lax"            
+#             # samesite="Lax",  # Changed from "None" to "Lax"            
+#             max_age=int(timedelta(days=7).total_seconds()),             
+#             path="/",
+#             # Add this line to specify domain explicitly
+#             # domain="localhost"  # Use "localhost" instead of "127.0.0.1"
+#         )         
+        
+#         response.set_cookie(             
+#             key="refresh_token",             
+#             value=serializer.validated_data["refresh_token"],             
+#             httponly=True,             
+#             secure=False,  # Will need to be True in production with HTTPS            
+#             samesite="Lax",  # Changed from "None" to "Lax"            
+#             max_age=int(timedelta(days=30).total_seconds()),             
+#             path="/",
+#             # Add this line to specify domain explicitly
+#             # domain="localhost"  # Use "localhost" instead of "127.0.0.1"
+#         )          
+
+#         # TODO: Change secure to true before deployment in production
+
+#         # Set CSRF Token in response header
+#         response["X-CSRFToken"] = get_token(request)
+#         return response
+
+
 class LoginAccountView(generics.GenericAPIView):
     throttle_classes = [AnonRateThrottle]
     serializer_class = LoginSerializer
@@ -114,39 +154,60 @@ class LoginAccountView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True) 
+        
+        # Prepare response with user data but without tokens in the body
+        # response = Response({
+        #     "message": "Login successful",
+        #     "user": serializer.validated_data.get("user", {}),
+        #     # Don't include tokens in response body for better security
+        # }, status=status.HTTP_200_OK)
         response = Response({"message": "Login successful",**serializer.validated_data}, status=status.HTTP_200_OK)
+
+        
+        # Get the domain from request for cookie settings
+        domain = request.get_host().split(':')[0]
+        is_localhost = domain == 'localhost' or domain == '127.0.0.1'
+        
+        # Set access token cookie
         response.set_cookie(             
             key="access_token",             
             value=serializer.validated_data["access_token"],             
             httponly=True,             
-            secure=False,  # Will need to be True in production with HTTPS             
-            samesite="Lax",  # Changed from "None" to "Lax"            
-            max_age=int(timedelta(days=7).total_seconds()),             
+            secure=not is_localhost,  # Only false for localhost  
+            samesite="Lax",
+            max_age=int(timedelta(days=1).total_seconds()),  # Shorter lifetime for access token            
             path="/",
-            # Add this line to specify domain explicitly
-            domain="localhost"  # Use "localhost" instead of "127.0.0.1"
+            # Only set domain for non-localhost environments
+            domain=None if is_localhost else domain,
         )         
         
+        # Set refresh token cookie
         response.set_cookie(             
             key="refresh_token",             
             value=serializer.validated_data["refresh_token"],             
             httponly=True,             
-            secure=False,  # Will need to be True in production with HTTPS            
-            samesite="Lax",  # Changed from "None" to "Lax"            
+            secure=not is_localhost,  # Only false for localhost          
+            samesite="Lax",         
             max_age=int(timedelta(days=30).total_seconds()),             
             path="/",
-            # Add this line to specify domain explicitly
-            domain="localhost"  # Use "localhost" instead of "127.0.0.1"
-        )          
-
-        # TODO: Change secure to true before deployment in production
-
-        # Set CSRF Token in response header
-        response["X-CSRFToken"] = get_token(request)
+            # Only set domain for non-localhost environments
+            domain=None if is_localhost else domain,
+        )
+        
+        # Set CSRF token if not already set
+        if not request.COOKIES.get('csrftoken'):
+            response.set_cookie(
+                key="csrftoken",
+                value=get_token(request),  # Django's get_token function
+                samesite="Lax",
+                secure=not is_localhost,
+                max_age=int(timedelta(days=7).total_seconds()),
+                path="/",
+                domain=None if is_localhost else domain,
+            )
+            
         return response
-
-
-
+        
 
 class ResendActivationLinkView(APIView): 
 
