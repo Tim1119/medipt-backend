@@ -5,20 +5,17 @@ from apps.accounts.user_roles import UserRoles
 
 
 class IsOrganization(BasePermission):
-
-    '''
-    This permission class checks if the user is the user is an organization
-    '''
-       
-    def has_object_permission(self, request, view, obj):
-        if request.user.role == UserRoles.ORGANIZATION: 
-            return True
-        raise PermissionDenied("You do not have permission to access this data.")
+    """
+    Allows access only to users with the organization role.
+    """
+    message = "You do not have permission to access this data."
 
     def has_permission(self, request, view):
-        if request.user.role == UserRoles.ORGANIZATION:
-            return True
-        raise PermissionDenied("You do not have permission to access this data.")
+        return request.user and request.user.role == UserRoles.ORGANIZATION
+
+    def has_object_permission(self, request, view, obj):
+        return request.user and request.user.role == UserRoles.ORGANIZATION
+
 
 class IsOrganizationAndOwnsObject(BasePermission):
     """

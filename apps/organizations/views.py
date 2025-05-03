@@ -61,16 +61,11 @@ class OrganizationDashboardView(APIView):
             verified_female=Count("pkid", filter=Q(user__is_verified=True, gender="Female")),
         )
 
-        # latest_caregivers = Caregiver.objects.filter(organization=organization,user__is_active=True,user__is_verified=True)[:10]
-        # latest_patients = Patient.objects.filter(organization=organization,user__is_active=True,user__is_verified=True)[:10]
-
         response_data = {
             "statistics": {
                 "caregivers": caregiver_stats,
                 "patients": patient_stats,
             },
-            # "latest_caregivers": CaregiverSerializer(latest_caregivers, many=True).data,
-            # "latest_patients": PatientSerializer(latest_patients, many=True).data,
         }
 
         return Response({"message": "Organization Dashboard Data", "data": response_data}, status=status.HTTP_200_OK)

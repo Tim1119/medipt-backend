@@ -8,3 +8,11 @@ class IsCaregiver(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return obj.organization == request.user.caregiver.organization
+
+class IsOrganizationOrCaregiver(BasePermission):
+    """
+    Allows access to authenticated users who are either organization users or caregivers belonging to the organization.
+    """
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and (request.user.role == UserRoles.CAREGIVER  or request.user.role == UserRoles.ORGANIZATION))

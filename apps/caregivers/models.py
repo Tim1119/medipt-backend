@@ -13,7 +13,7 @@ from shared.text_choices import Gender,MaritalStatus,CaregiverTypes
 from apps.accounts.models import User
 from apps.organizations.models import Organization
 from .utils import role_abbreviation
-
+from datetime import date
 
 
 class Caregiver(TimeStampedUUID):
@@ -83,3 +83,7 @@ class Caregiver(TimeStampedUUID):
         """
         role_abbr = role_abbreviation.get(self.caregiver_type, "")
         return f"{role_abbr.title()} {self.first_name} {self.last_name}"
+
+    def clean(self):
+        if self.date_of_birth and self.date_of_birth > date.today():
+            raise ValidationError(_("Date of birth cannot be in the future."))
