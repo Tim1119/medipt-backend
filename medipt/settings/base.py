@@ -37,8 +37,8 @@ DJANGO_APPS = [
 LOCAL_APPS = [
     'apps.accounts',
     'apps.organizations',
-    # 'apps.caregivers',
-    # 'apps.patients',
+    'apps.caregivers',
+    'apps.patients',
     # 'apps.invites',
 ]
 
@@ -256,3 +256,4 @@ SWAGGER_SETTINGS = {
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_ALL_ORIGINS = True
+

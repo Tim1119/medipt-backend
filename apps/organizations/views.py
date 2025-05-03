@@ -1,6 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Q,Sum
+from apps.patients.serializers import  PatientSerializer
 # from apps.patients.serializers import PatientDiagnosisDetailsSerializer, PatientSerializer,CreatePatientDiagnosisWithVitalSignSerializer
+from apps.patients.models import Patient
 # from apps.patients.models import Patient, PatientDiagnosisDetails
 from rest_framework.generics import ListAPIView,CreateAPIView,UpdateAPIView,RetrieveAPIView
 from rest_framework.response import Response
@@ -8,12 +10,13 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
+from apps.caregivers.serializers import CaregiverSerializer
 # from apps.caregivers.serializers import CaregiverSerializer,BasicCaregiverSerializer
 # from apps.patients.exceptions import PatientNotFoundException
 # from apps.organizations.utils import StandardResultsSetPagination
 from .models import Organization
 from .permissions import IsOrganization,IsOrganizationAndOwnsObject
-# from apps.caregivers.models import Caregiver
+from apps.caregivers.models import Caregiver
 from django_filters.rest_framework import DjangoFilterBackend
 from apps.accounts.user_roles import UserRoles
 from shared.validators import validate_uuid
