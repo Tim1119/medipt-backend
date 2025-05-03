@@ -17,9 +17,62 @@ from rest_framework.response import Response
 from rest_framework import status
 from apps.caregivers.exceptions import CaregiverNotFoundException
 from django.db import transaction
+from rest_framework.mixins import RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,ListModelMixin
+from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
+from shared.pagination import StandardResultsSetPagination
 
 
 # Create your views here.
+class LatestPatientsView(ListAPIView):
+    """
+      Returns a list of top 5 latest patients associated with the organization or logged in caregiver organization.
+    """
+    # permission_classes = [IsAuthenticated, IsOrganizationOrCaregiver]
+    permission_classes = [IsAuthenticated, IsOrganization]
+    serializer_class = PatientSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.role == UserRoles.ORGANIZATION:
+            organization = user.organization
+        elif user.role == UserRoles.CAREGIVER:
+            organization = user.caregiver.organization
+        else:
+            raise NotFound("Organization not found for user.")
+
+        if organization is None:
+            raise NotFound("Organization not found for user.")
+
+        return Patient.objects.filter(organization=organization,user__is_verified=True,user__is_active=True,user__role=UserRoles.PATIENT)[:5]
+
+class PatientViewSet(ListModelMixin,RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated, IsOrganization]
+    serializer_class = PatientSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['first_name', 'last_name', 'medical_id']
+    filterset_fields = ['medical_id', 'user__is_active']
+    pagination_class = StandardResultsSetPagination
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.role == UserRoles.ORGANIZATION:
+            organization = user.organization
+        elif user.role == UserRoles.CAREGIVER:
+            organization = user.caregiver.organization
+
+        else:
+            raise NotFound("Organization not found for user.")
+
+        if organization is None:
+            raise NotFound("Organization not found for user.")
+
+        return Patient.objects.filter(organization=organization,user__is_verified=True,user__is_active=True,user__role=UserRoles.PATIENT)
+
 
 
 class PatientUpdateRegistrationDetailsView(UpdateAPIView):

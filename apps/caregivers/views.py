@@ -6,8 +6,15 @@ from .permissions import IsOrganizationOrCaregiver
 from apps.accounts.user_roles import UserRoles
 from .models import Caregiver
 from apps.organizations.permissions import IsOrganization
+from rest_framework.mixins import RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,ListModelMixin
+from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
+from shared.pagination import StandardResultsSetPagination
+
+
 # Create your views here.
-class LatestCaregiverView(ListAPIView):
+class LatestCaregiversView(ListAPIView):
     """
     Lists the 5 most recently hired caregivers in the authenticated user's organization
     (whether the user is an organization or a caregiver).
@@ -31,8 +38,30 @@ class LatestCaregiverView(ListAPIView):
 
         return Caregiver.objects.filter(organization=organization,user__is_verified=True,user__is_active=True,user__role=UserRoles.CAREGIVER)[:5]
 
+class CaregiverViewSet(ListModelMixin,RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated, IsOrganization]
+    serializer_class = CaregiverSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['first_name', 'last_name', 'staff_number']
+    filterset_fields = ['caregiver_type', 'user__is_active']
+    pagination_class = StandardResultsSetPagination
+    lookup_field = 'slug'
 
+    def get_queryset(self):
+        user = self.request.user
 
+        if user.role == UserRoles.ORGANIZATION:
+            organization = user.organization
+        elif user.role == UserRoles.CAREGIVER:
+            organization = user.caregiver.organization
+
+        else:
+            raise NotFound("Organization not found for user.")
+
+        if organization is None:
+            raise NotFound("Organization not found for user.")
+
+        return Caregiver.objects.filter(organization=organization,user__is_verified=True,user__is_active=True,user__role=UserRoles.CAREGIVER)
 
 
 
