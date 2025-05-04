@@ -124,7 +124,7 @@ class PatientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patient
-        exclude=['slug','user']
+        exclude=['user']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

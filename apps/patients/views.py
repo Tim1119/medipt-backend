@@ -75,6 +75,48 @@ class PatientViewSet(ListModelMixin,RetrieveModelMixin,UpdateModelMixin,DestroyM
 
 
 
+
+    
+class TogglePatientStatusView(UpdateAPIView):
+    """
+    Helps to Toggle the status of the patient from active to non-active and vice versa
+    """ 
+    model = Patient
+    serializer_class = PatientSerializer
+    permission_classes = [IsAuthenticated, IsOrganization]
+    lookup_field='slug'
+
+    def get_object(self):
+        patient_slug = self.kwargs['slug']
+        patient = Patient.objects.filter(slug=patient_slug, organization=self.request.user.organization).first()
+        if not patient:
+            raise PatientNotFoundException()
+        return patient
+    
+    def update(self, request, *args, **kwargs):
+        patient = self.get_object()
+        patient.user.is_active = not patient.user.is_active
+        patient.user.save() 
+        serializer = PatientSerializer(patient,many=False)
+        return Response({ "message": "Patient status toggled successfully", "data": serializer.data},status=status.HTTP_200_OK)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class PatientUpdateRegistrationDetailsView(UpdateAPIView):
     """
     Helps to Update the registration details of patients when created by organization etc gender 
