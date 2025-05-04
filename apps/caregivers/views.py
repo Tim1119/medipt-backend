@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from rest_framework.response import Response
+from rest_framework import status
 from .serializers import CaregiverSerializer
 from rest_framework.generics import ListAPIView,CreateAPIView,UpdateAPIView,RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -11,6 +13,7 @@ from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from shared.pagination import StandardResultsSetPagination
+from .exceptions import CaregiverNotFoundException
 
 
 # Create your views here.
@@ -28,8 +31,8 @@ class LatestCaregiversView(ListAPIView):
 
         if user.role == UserRoles.ORGANIZATION:
             organization = user.organization
-        elif user.role == UserRoles.CAREGIVER:
-            organization = user.caregiver.organization
+        # elif user.role == UserRoles.CAREGIVER:
+        #     organization = user.caregiver.organization
         else:
             raise NotFound("Organization not found for user.")
 
@@ -52,8 +55,8 @@ class CaregiverViewSet(ListModelMixin,RetrieveModelMixin,UpdateModelMixin,Destro
 
         if user.role == UserRoles.ORGANIZATION:
             organization = user.organization
-        elif user.role == UserRoles.CAREGIVER:
-            organization = user.caregiver.organization
+        # elif user.role == UserRoles.CAREGIVER:
+        #     organization = user.caregiver.organization
 
         else:
             raise NotFound("Organization not found for user.")
@@ -63,7 +66,29 @@ class CaregiverViewSet(ListModelMixin,RetrieveModelMixin,UpdateModelMixin,Destro
 
         return Caregiver.objects.filter(organization=organization,user__is_verified=True,user__is_active=True,user__role=UserRoles.CAREGIVER)
 
+class ToggleCaregiverStatusView(UpdateAPIView):
+    """
+    Helps to toggle the status of the caregiver from active to non-active and vice versa
+    """ 
+    model = Caregiver
+    serializer_class = CaregiverSerializer
+    permission_classes = [IsAuthenticated, IsOrganization]
+    lookup_field='slug'
 
+    def get_object(self):
+        caregiver_slug = self.kwargs['slug']
+        caregiver = Caregiver.objects.filter(slug=caregiver_slug, organization=self.request.user.organization).first()
+        if not caregiver:
+            raise CaregiverNotFoundException()
+        return caregiver
+    
+    def update(self, request, *args, **kwargs):
+        caregiver = self.get_object()
+        caregiver.user.is_active = not caregiver.user.is_active
+        caregiver.user.save() 
+        serializer = CaregiverSerializer(caregiver,many=False)
+        return Response({ "message": "Caregiver status toggled successfully", "data": serializer.data},status=status.HTTP_200_OK)
+    
 
 
 
