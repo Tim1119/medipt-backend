@@ -37,7 +37,7 @@ urlpatterns = [
     path('api/v1/organizations/',include('apps.organizations.urls')),
     path('api/v1/caregivers/',include('apps.caregivers.urls')),
     path('api/v1/patients/',include('apps.patients.urls')),
-    # path('api/v1/invites/',include('apps.invites.urls')),
+    path('api/v1/invites/',include('apps.invites.urls')),
 ]
 
 

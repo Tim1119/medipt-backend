@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Invited to Join Our Organization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .button {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .footer {
+            background-color: #f1f1f1;
+            color: #666;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .footer p {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to {{ organization_name }}</h1>
+        </div>
+        <div class="content">
+            <p>Dear Caregiver,</p>
+            <p>You have been invited to join <strong>{{ organization_name }}</strong> as a <strong>{{ caregiver_role }}</strong>. We are excited to have you as part of our team!</p>
+            <p>To accept the invitation and complete your registration, please click the button below:</p>
+            <p style="text-align: center;">
+                <a href="{{ invite_url }}" class="button">Accept Invitation</a>
+            </p>
+            <p>If you have any questions or were not expecting this invitation, please contact us.</p>
+            <p>We look forward to working with you!</p>
+        </div>
+        <div class="footer">
+            <p>Best regards,</p>
+            <p><strong>Powered by the {{ organization_name }} Team</strong></p>
+            <p><em>1234 Health Street, Careville, HC 56789</em></p>
+        </div>
+    </div>
+</body>
+</html>

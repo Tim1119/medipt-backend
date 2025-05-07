@@ -39,7 +39,7 @@ LOCAL_APPS = [
     'apps.organizations',
     'apps.caregivers',
     'apps.patients',
-    # 'apps.invites',
+    'apps.invites',
 ]
 
 THIRD_PARTY_APPS=[
@@ -257,3 +257,5 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+INVITATION_EXPIRY_DAYS = 7  # Default to 7 days
+MAX_INVITATION_RESENDS = 3  # Maximum resends allowed
