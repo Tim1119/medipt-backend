@@ -49,6 +49,7 @@ class CaregiverViewSet(ListModelMixin,RetrieveModelMixin,UpdateModelMixin,Destro
     filterset_fields = ['caregiver_type', 'user__is_active']
     pagination_class = StandardResultsSetPagination
     lookup_field = 'slug'
+    
 
     def get_queryset(self):
         user = self.request.user
@@ -65,6 +66,8 @@ class CaregiverViewSet(ListModelMixin,RetrieveModelMixin,UpdateModelMixin,Destro
             raise NotFound("Organization not found for user.")
 
         return Caregiver.objects.filter(organization=organization,user__is_verified=True,user__is_active=True,user__role=UserRoles.CAREGIVER)
+
+    
 
 class ToggleCaregiverStatusView(UpdateAPIView):
     """
