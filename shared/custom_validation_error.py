@@ -8,8 +8,9 @@ class CustomValidationError(APIException):
     default_detail = "Validation error occurred."
     default_code = "validation_error"
 
-    def __init__(self, detail=None, status_code=None):
+    def __init__(self, detail=None,code=None, status_code=None):
         if status_code:
             self.status_code = status_code
         detail = detail or self.default_detail
-        super().__init__(detail)  
+        code = code or self.default_code
+        super().__init__(detail,code)  

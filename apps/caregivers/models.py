@@ -16,6 +16,7 @@ from .utils import role_abbreviation
 from datetime import date
 
 
+
 class Caregiver(TimeStampedUUID):
 
     user = models.OneToOneField(User,on_delete=models.CASCADE)

@@ -1,32 +1,37 @@
+# medipt/apps/invites/views.py
 import uuid
 import logging
 from django.utils import timezone
 from django.db import transaction
-from rest_framework import status, serializers
+from django.conf import settings
+from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
-from rest_framework.generics import CreateAPIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from apps.organizations.permissions import IsOrganization
 from .models import CaregiverInvite, InvitationStatus
-from .serializers import CaregiverAcceptInvitationSerializer, CaregiverInvitationSerializer
+from .serializers import CaregiverInvitationSerializer, CaregiverAcceptInvitationSerializer
 from .tasks import send_invitation_to_caregiver
-from shared.validators import validate_uuid
 from .exceptions import (
     CaregiverInvitationException,
     ActiveInvitationExistsException,
     InvitationAlreadyAcceptedException,
     MaxResendsExceededException,
+    EmailSendingFailedException,
     InvalidInvitationTokenException,
     InvitationNotFoundException,
     InvitationExpiredException,
-    EmailSendingFailedException,
 )
+from shared.validators import validate_uuid
 
 logger = logging.getLogger(__name__)
+
+def default_expires_at():
+    return timezone.now() + timezone.timedelta(days=settings.INVITATION_EXPIRY_DAYS)
 
 class InviteCaregiverView(APIView):
     """
@@ -36,7 +41,7 @@ class InviteCaregiverView(APIView):
     - Limits resends to prevent abuse.
     """
     permission_classes = [IsAuthenticated, IsOrganization]
-    throttle_classes = [UserRateThrottle]  # Rate limit to prevent abuse
+    throttle_classes = [UserRateThrottle]
 
     @swagger_auto_schema(
         request_body=CaregiverInvitationSerializer,
@@ -51,17 +56,15 @@ class InviteCaregiverView(APIView):
             raise CaregiverInvitationException(detail=serializer.errors)
 
         email = serializer.validated_data["email"]
-        organization = serializer.validated_data["organization"]
         role = serializer.validated_data["role"]
         max_resends = getattr(settings, "MAX_INVITATION_RESENDS", 3)
 
         try:
             with transaction.atomic():
-                # Check for existing invitation
                 existing_invite = CaregiverInvite.objects.filter(
                     email__iexact=email,
-                    organization=organization,
-                    is_deleted=False
+                    organization=request.user.organization,
+                    deleted_at__isnull=True
                 ).first()
 
                 if existing_invite:
@@ -71,7 +74,6 @@ class InviteCaregiverView(APIView):
                         raise MaxResendsExceededException()
                     if not existing_invite.is_expired():
                         raise ActiveInvitationExistsException()
-                    # Update expired invitation
                     existing_invite.token = uuid.uuid4()
                     existing_invite.expires_at = default_expires_at()
                     existing_invite.resend_count += 1
@@ -80,10 +82,8 @@ class InviteCaregiverView(APIView):
                     existing_invite.save()
                     invitation = existing_invite
                 else:
-                    # Create new invitation
                     invitation = serializer.save(invited_by=request.user)
 
-            # Send invitation asynchronously
             try:
                 send_invitation_to_caregiver.delay(
                     email=invitation.email,
@@ -115,9 +115,9 @@ class InviteCaregiverView(APIView):
             )
 
         except Exception as e:
-            if not isinstance(e, CustomValidationError):
+            if not isinstance(e, CaregiverInvitationException):
                 raise CaregiverInvitationException(
-                    detail=f"An unexpected error occurred: {str(e)}",
+                    detail=f"{str(e)}",
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
                 ) from e
             raise
@@ -128,7 +128,7 @@ class CaregiverAcceptInvitationView(CreateAPIView):
     Validates token and invitation status before proceeding.
     """
     serializer_class = CaregiverAcceptInvitationSerializer
-    throttle_classes = [UserRateThrottle]  # Rate limit to prevent brute-force attacks
+    throttle_classes = [UserRateThrottle]
 
     @swagger_auto_schema(
         manual_parameters=[
@@ -157,7 +157,7 @@ class CaregiverAcceptInvitationView(CreateAPIView):
                 try:
                     invitation = CaregiverInvite.objects.filter(
                         token=token,
-                        is_deleted=False
+                        deleted_at__isnull=True  # Soft deletion
                     ).select_for_update().get()
                 except CaregiverInvite.DoesNotExist:
                     raise InvitationNotFoundException()
@@ -169,13 +169,11 @@ class CaregiverAcceptInvitationView(CreateAPIView):
                 if invitation.status != InvitationStatus.PENDING:
                     raise InvitationAlreadyAcceptedException()
 
-                # Proceed with serializer to create user
                 serializer = self.get_serializer(data=request.data, context={"token": token})
                 if not serializer.is_valid():
                     raise CaregiverInvitationException(detail=serializer.errors)
                 user = serializer.save()
 
-                # Update invitation status
                 invitation.status = InvitationStatus.ACCEPTED
                 invitation.save()
 
@@ -194,12 +192,12 @@ class CaregiverAcceptInvitationView(CreateAPIView):
             )
 
         except Exception as e:
-            if not isinstance(e, CustomValidationError):
+            if not isinstance(e, CaregiverInvitationException):
                 raise CaregiverInvitationException(
-                    detail=f"An unexpected error occurred: {str(e)}",
+                    detail=f"{str(e)}",
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
                 ) from e
-            raise
+            
 
     def get_serializer_context(self):
         """Include token in serializer context."""

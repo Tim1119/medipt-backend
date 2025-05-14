@@ -25,7 +25,7 @@ class InvitationStatus(models.TextChoices):
     ACCEPTED = "ACCEPTED", _("Accepted")
     EXPIRED = "EXPIRED", _("Expired")
 
-class CaregiverInvite(TimeStampedUUID, SoftDeleteModel):
+class CaregiverInvite(SoftDeleteModel,TimeStampedUUID ):
     email = models.EmailField()
     organization = models.ForeignKey(
         Organization,

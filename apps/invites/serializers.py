@@ -38,7 +38,7 @@ class CaregiverInvitationSerializer(serializers.ModelSerializer):
         invitation = CaregiverInvite.objects.filter(
             email__iexact=email,
             organization=organization,
-            is_deleted=False
+            deleted_at__isnull=True  # Soft deletion
         ).first()
 
         if invitation:
@@ -55,7 +55,7 @@ class CaregiverInvitationSerializer(serializers.ModelSerializer):
         validated_data["invited_by"] = self.context["request"].user
         return super().create(validated_data)
 
-
+# medipt/apps/invites/serializers.py (continued)
 class CaregiverAcceptInvitationSerializer(serializers.Serializer):
     """Serializer to validate and process caregiver invitation acceptance."""
     first_name = serializers.CharField(max_length=100)
@@ -68,27 +68,23 @@ class CaregiverAcceptInvitationSerializer(serializers.Serializer):
 
     def validate(self, data):
         """Validate the invitation token and input data."""
-        # Check password confirmation
         if data["password"] != data["password_confirmation"]:
             raise CaregiverInvitationException(
                 detail={"password_confirmation": "Passwords do not match."},
                 code="password_mismatch"
             )
 
-        # Get token from context
         token = self.context.get("token")
         if not token:
             raise InvalidInvitationTokenException()
 
-        # Retrieve invitation
         invitation = CaregiverInvite.objects.filter(
             token=token,
-            is_deleted=False
+            deleted_at__isnull=True  # Soft deletion
         ).first()
         if not invitation:
             raise InvitationNotFoundException()
 
-        # Check invitation status and expiry
         if invitation.status != InvitationStatus.PENDING:
             raise InvitationAlreadyAcceptedException()
         if invitation.is_expired():
@@ -96,14 +92,12 @@ class CaregiverAcceptInvitationSerializer(serializers.Serializer):
             invitation.save()
             raise InvitationExpiredException()
 
-        # Check if a caregiver already exists with this email
         if Caregiver.objects.filter(user__email__iexact=invitation.email).exists():
             raise CaregiverInvitationException(
                 detail="A caregiver account already exists for this email.",
                 code="caregiver_already_exists"
             )
 
-        # Store invitation in context for create
         self.context["invitation"] = invitation
         return data
 
@@ -112,7 +106,6 @@ class CaregiverAcceptInvitationSerializer(serializers.Serializer):
         invitation = self.context["invitation"]
 
         with transaction.atomic():
-            # Create the user account
             user = User.objects.create_user(
                 email=invitation.email,
                 role=UserRoles.CAREGIVER,
@@ -120,7 +113,6 @@ class CaregiverAcceptInvitationSerializer(serializers.Serializer):
                 is_invited=True
             )
 
-            # Create caregiver profile
             caregiver = Caregiver.objects.create(
                 user=user,
                 first_name=validated_data["first_name"],
@@ -129,7 +121,6 @@ class CaregiverAcceptInvitationSerializer(serializers.Serializer):
                 caregiver_type=invitation.role
             )
 
-            # Update invitation status
             invitation.status = InvitationStatus.ACCEPTED
             invitation.save()
 
