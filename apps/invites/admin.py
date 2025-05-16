@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
 from .models import CaregiverInvite, InvitationStatus
 
 @admin.register(CaregiverInvite)
@@ -8,9 +7,8 @@ class CaregiverInviteAdmin(admin.ModelAdmin):
     list_display = ('email', 'organization', 'role', 'token', 'status', 'created_at', 'expires_at', 'invited_by')
     list_filter = ('status', 'organization', 'role', 'created_at')
     search_fields = ('email', 'organization__name', 'role', 'invited_by__email')
-    actions = ['mark_as_accepted']
+    actions = ['mark_as_accepted', 'delete_selected']
 
-    # Customize how the object is displayed in the admin form
     fieldsets = (
         (None, {
             'fields': ('email', 'organization', 'role', 'token', 'status', 'expires_at', 'invited_by')
@@ -21,7 +19,6 @@ class CaregiverInviteAdmin(admin.ModelAdmin):
         }),
     )
 
-    # Display only the relevant fields when creating or editing an invitation
     add_fieldsets = (
         (None, {
             'fields': ('email', 'organization', 'role', 'expires_at', 'status')
@@ -41,16 +38,10 @@ class CaregiverInviteAdmin(admin.ModelAdmin):
 
     mark_as_accepted.short_description = _("Mark selected invitations as accepted")
 
-    def get_queryset(self, request):
-        """
-        Exclude soft-deleted invitations from the admin interface.
-        """
-        return super().get_queryset(request).filter(is_deleted=False)
-
     def get_readonly_fields(self, request, obj=None):
         """
         Make certain fields read-only when editing an existing invitation.
         """
-        if obj:  # Editing an existing object
+        if obj:
             return ('token', 'created_at', 'updated_at')
         return ()

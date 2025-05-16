@@ -14,7 +14,7 @@ def send_invitation_to_caregiver(self, email, invitation_token, role, organizati
     Sends an email invitation to a caregiver with a tokenized invite URL pointing to the frontend.
     """
     try:
-        invite_url = f"{settings.REACT_FRONTEND_URL}/accept-invitation?token={invitation_token}"
+        invite_url = f"{settings.REACT_FRONTEND_URL}/auth/caregiver-accept-invitation/{invitation_token}"
 
         context = {
             'organization_name': organization_name,
@@ -42,7 +42,7 @@ def send_invitation_to_caregiver(self, email, invitation_token, role, organizati
         email.content_subtype = "html"
         email.send(fail_silently=False)
 
-        logger.info(f"Invitation email sent to {email} for role {role} in {organization_name}")
+        logger.info(f"Invitation email sent to {email} for role {role} in {organization_name} {invite_url}")
 
     except Exception as e:
         logger.error(f"Failed to send invitation email to {email}: {str(e)}")

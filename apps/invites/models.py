@@ -1,20 +1,16 @@
-from django_softdelete.models import SoftDeleteModel
-from shared.models import TimeStampedUUID
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.db.models.functions import Lower
-from django_softdelete.models import SoftDeleteModel
 from apps.organizations.models import Organization
+from shared.models import TimeStampedUUID
 from shared.text_choices import CaregiverTypes
 import uuid
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-
-User= get_user_model()
-
+User = get_user_model()
 
 def default_expires_at():
     """Set default expiry based on settings or 7 days."""
@@ -25,7 +21,7 @@ class InvitationStatus(models.TextChoices):
     ACCEPTED = "ACCEPTED", _("Accepted")
     EXPIRED = "EXPIRED", _("Expired")
 
-class CaregiverInvite(SoftDeleteModel,TimeStampedUUID ):
+class CaregiverInvite(TimeStampedUUID):
     email = models.EmailField()
     organization = models.ForeignKey(
         Organization,
@@ -84,7 +80,6 @@ class CaregiverInvite(SoftDeleteModel,TimeStampedUUID ):
     def save(self, *args, **kwargs):
         """Ensure email is lowercase and validate before saving."""
         self.full_clean()  # Run clean() before saving
-        # Update status to EXPIRED if past expiry date
         if self.status != InvitationStatus.EXPIRED and self.is_expired():
             self.status = InvitationStatus.EXPIRED
         super().save(*args, **kwargs)

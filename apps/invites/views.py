@@ -1,4 +1,3 @@
-# medipt/apps/invites/views.py
 import uuid
 import logging
 from django.utils import timezone
@@ -63,9 +62,8 @@ class InviteCaregiverView(APIView):
             with transaction.atomic():
                 existing_invite = CaregiverInvite.objects.filter(
                     email__iexact=email,
-                    organization=request.user.organization,
-                    deleted_at__isnull=True
-                ).first()
+                    organization=request.user.organization
+                ).first()  # Removed deleted_at__isnull=True
 
                 if existing_invite:
                     if existing_invite.status == InvitationStatus.ACCEPTED:
@@ -156,9 +154,8 @@ class CaregiverAcceptInvitationView(CreateAPIView):
             with transaction.atomic():
                 try:
                     invitation = CaregiverInvite.objects.filter(
-                        token=token,
-                        deleted_at__isnull=True  # Soft deletion
-                    ).select_for_update().get()
+                        token=token
+                    ).select_for_update().get()  # Removed deleted_at__isnull=True
                 except CaregiverInvite.DoesNotExist:
                     raise InvitationNotFoundException()
 
@@ -197,7 +194,7 @@ class CaregiverAcceptInvitationView(CreateAPIView):
                     detail=f"{str(e)}",
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
                 ) from e
-            
+            raise
 
     def get_serializer_context(self):
         """Include token in serializer context."""

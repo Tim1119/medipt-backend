@@ -37,9 +37,8 @@ class CaregiverInvitationSerializer(serializers.ModelSerializer):
         # Check for existing invitation in the same organization
         invitation = CaregiverInvite.objects.filter(
             email__iexact=email,
-            organization=organization,
-            deleted_at__isnull=True  # Soft deletion
-        ).first()
+            organization=organization
+        ).first()  # Removed deleted_at__isnull=True
 
         if invitation:
             if invitation.status == InvitationStatus.ACCEPTED:
@@ -55,7 +54,6 @@ class CaregiverInvitationSerializer(serializers.ModelSerializer):
         validated_data["invited_by"] = self.context["request"].user
         return super().create(validated_data)
 
-# medipt/apps/invites/serializers.py (continued)
 class CaregiverAcceptInvitationSerializer(serializers.Serializer):
     """Serializer to validate and process caregiver invitation acceptance."""
     first_name = serializers.CharField(max_length=100)
@@ -79,9 +77,9 @@ class CaregiverAcceptInvitationSerializer(serializers.Serializer):
             raise InvalidInvitationTokenException()
 
         invitation = CaregiverInvite.objects.filter(
-            token=token,
-            deleted_at__isnull=True  # Soft deletion
-        ).first()
+            token=token
+        ).first()  # Removed deleted_at__isnull=True
+
         if not invitation:
             raise InvitationNotFoundException()
 
@@ -110,7 +108,9 @@ class CaregiverAcceptInvitationSerializer(serializers.Serializer):
                 email=invitation.email,
                 role=UserRoles.CAREGIVER,
                 password=validated_data["password"],
-                is_invited=True
+                is_invited=True,
+                is_active=True,
+                is_verified=True,
             )
 
             caregiver = Caregiver.objects.create(
