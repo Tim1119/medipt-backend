@@ -26,7 +26,6 @@ import uuid
 from rest_framework.exceptions import NotFound
 from django.db.models import Prefetch
 # from .serializers import OrganizationRegisterPatientSerializer, OrganizationBasicInfoSerializer
-from .tasks import send_patient_account_creation_notification_email
 # from apps.caregivers.exceptions import CaregiverNotFoundException
 # from apps.caregivers.permissions import IsCaregiver
 from rest_framework.filters import SearchFilter

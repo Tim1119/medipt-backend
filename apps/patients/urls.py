@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 # from .views import (PatientUpdateRegistrationDetailsView,UpdatePatientBasicInfoView,PatientDetailByMedicalIDView,PatientDiagnosisDetailsRecordsView
 #                     ,PatientDiagnosisListView,CreatePatientDiagnosisWithVitalSignView,OrganizationUpdatePatientRegistrationDetailsView)
-from .views import (LatestPatientsView,PatientViewSet,TogglePatientStatusView)
+from .views import (LatestPatientsView,PatientViewSet,TogglePatientStatusView,RegisterPatientView)
 
 router = DefaultRouter()
 router.register('all-patients',PatientViewSet, basename='patient')
@@ -13,6 +13,7 @@ urlpatterns = [
    path('', include(router.urls)),
    path('latest-patients/', LatestPatientsView.as_view(),name='latest-patients'),
    path('toggle-patient-status/<str:slug>/', TogglePatientStatusView.as_view(),name='toggle-patient-status'),
+    path('register-new-patient/', RegisterPatientView.as_view(), name='register-new-patient'),
    # path('update-patient-registration-details/<uuid:id>/',PatientUpdateRegistrationDetailsView.as_view(),name='update-patient-registration-details'),
    # path('update-patient-registration-details/<str:medical_id>/',OrganizationUpdatePatientRegistrationDetailsView.as_view(),name='update-patient-registration-details'),
    # path('update-patient-basic_info/<uuid:id>/',UpdatePatientBasicInfoView.as_view(),name='update-patient-basic-info'),

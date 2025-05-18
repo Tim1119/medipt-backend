@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{ organization_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 0 0 15px;
+            line-height: 1.5;
+        }
+        .content .credentials {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .credentials p {
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        .content .login-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+        .footer {
+            background-color: #f1f1f1;
+            color: #666;
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to {{ organization_name }}</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{ patient_full_name }},</p>
+            <p>We're excited to welcome you to <strong>{{ organization_name }}</strong>. Your patient account has been successfully created.</p>
+            <p>You can now log in using the email address below:</p>
+            <div class="credentials">
+                <p>Email: {{ patient_email }}</p>
+            </div>
+            <p>Click the button below to access your account:</p>
+            <a href="{{ login_url }}" class="login-btn">Log In to Your Account</a>
+            <p>If the button doesn’t work, copy and paste this link into your browser:</p>
+            <p>{{ login_url }}</p>
+            <p>If you have any issues accessing your account, please contact {{ organization_name }} support.</p>
+        </div>
+        <div class="footer">
+            <p>Best regards,<br>{{ organization_name }} Team<br>No 1, Hill View Side, Agunyi Ironsi Street, Maitama Abuja</p>
+        </div>
+    </div>
+</body>
+</html>
