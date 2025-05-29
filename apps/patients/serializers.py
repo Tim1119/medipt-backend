@@ -10,6 +10,9 @@ from apps.accounts.user_roles import UserRoles
 from .exceptions import PatientNotificationFailedException
 import logging
 from .tasks import send_patient_account_creation_notification_email
+from .mixins import PatientRepresentationMixin
+from django.core.validators import RegexValidator
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,22 +21,15 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-class PatientSerializer(serializers.ModelSerializer):
+class PatientSerializer(PatientRepresentationMixin,serializers.ModelSerializer):
 
     class Meta:
         model = Patient
         exclude=['user']
-
+    
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['email'] = instance.user.email
-        representation['role'] = instance.user.role 
-        representation['active'] = instance.user.is_active
-        representation['verified'] = instance.user.is_verified
-        return representation
-
-
-
+        return self.add_user_fields_to_representation(instance, representation)
 
 class PatientMedicalRecordSerializer(serializers.ModelSerializer):
     class Meta:
@@ -59,6 +55,33 @@ class BasePatientSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Profile picture must be under 2MB.")
             if not value.name.lower().endswith(('.jpg', '.jpeg', '.png')):
                 raise serializers.ValidationError("Profile picture must be a JPG or PNG file.")
+        return value
+
+    def validate_phone_number(self, value):
+        if value:
+            validator = RegexValidator(
+                r'^\+?1?\d{9,15}$',
+                message="Phone number must be a valid format (e.g., +1234567890)."
+            )
+            validator(value)
+        return value
+
+    def validate_first_name(self, value):
+        if value:
+            validator = RegexValidator(
+                r'^[a-zA-Z\s-]+$',
+                message="First name can only contain letters, spaces, or hyphens."
+            )
+            validator(value)
+        return value
+
+    def validate_last_name(self, value):
+        if value:
+            validator = RegexValidator(
+                r'^[a-zA-Z\s-]+$',
+                message="Last name can only contain letters, spaces, or hyphens."
+            )
+            validator(value)
         return value
 
 class OrganizationRegisterPatientSerializer(BasePatientSerializer):
@@ -108,15 +131,57 @@ class OrganizationRegisterPatientSerializer(BasePatientSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        # Move medical_record fields to a nested object
-        medical_record = getattr(instance, 'patientmedicalrecord', None)
-        if medical_record:
-            representation['medical_record'] = PatientMedicalRecordSerializer(medical_record).data
-        else:
-            representation['medical_record'] = {}
+        representation = self.add_user_fields_to_representation(instance, representation)
+        representation = self.add_medical_record_to_representation(instance, representation)
         return representation
 
 
+class PatientDetailSerializer(PatientRepresentationMixin, BasePatientSerializer):
+    # medical_record = PatientMedicalRecordSerializer(source='patientmedicalrecord', read_only=True)
+    medical_record = PatientMedicalRecordSerializer(required=False, partial=True)
+    # email = serializers.EmailField(source='user.email', read_only=True)  # Display email but don't allow updates
+
+    class Meta(BasePatientSerializer.Meta):
+        # fields = BasePatientSerializer.Meta.fields + ['medical_record', 'email', 'role', 'active', 'verified']
+        fields = BasePatientSerializer.Meta.fields + ['medical_record']
+        # read_only_fields = ['id', 'medical_id', 'email', 'role', 'active', 'verified', 'pkid', 'created_at', 'updated_at', 'organization', 'slug']
+        read_only_fields = ['id', 'medical_id']
+
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation = self.add_user_fields_to_representation(instance, representation)
+        representation = self.add_medical_record_to_representation(instance, representation)
+        return representation
+    
+    def update(self, instance, validated_data):
+        """
+        Update patient instance and related medical record.
+        """
+        medical_record_data = validated_data.pop('medical_record', None)
+        
+        with transaction.atomic():
+            # Update patient fields
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+            
+            # Update medical record if provided
+            if medical_record_data:
+                try:
+                    medical_record = instance.patientmedicalrecord
+                    for attr, value in medical_record_data.items():
+                        setattr(medical_record, attr, value)
+                    medical_record.save()
+                except PatientMedicalRecord.DoesNotExist:
+                    # Create medical record if it doesn't exist
+                    PatientMedicalRecord.objects.create(
+                        patient=instance,
+                        **medical_record_data
+                    )
+            
+            logger.info(f"Updated patient {instance.medical_id} and medical record")
+            return instance
 # class PatientDetailSerializer(serializers.ModelSerializer):
 #     """This serializer is used to get detailed information about a patient"""
     

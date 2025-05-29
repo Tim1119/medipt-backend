@@ -1,7 +1,6 @@
 from django.shortcuts import render,get_object_or_404
-from .serializers import OrganizationRegisterPatientSerializer
+from .serializers import OrganizationRegisterPatientSerializer,PatientDetailSerializer,PatientSerializer
 # from .serializers import PatientBasicInfoSerializer, PatientDetailSerializer, UpdatePatientRegistrationDetailsSerializer,UpdatePatientBasicInfoSerializer,PatientSerializer,PatientDiagnosisDetailsSerializer,PatientDiagnosisListSerializer,CreatePatientDiagnosisWithVitalSignSerializer,OrganizationUpdatePatientRegistrationDetailsSerializer
-from .serializers import PatientSerializer
 from .models import Patient, PatientDiagnosisDetails
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import UpdateAPIView,RetrieveAPIView,ListAPIView,CreateAPIView
@@ -24,6 +23,7 @@ from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from shared.pagination import StandardResultsSetPagination
+from rest_framework import generics
 
 
 
@@ -112,6 +112,93 @@ class RegisterPatientView(CreateAPIView):
     def perform_create(self, serializer):
         with transaction.atomic():
             serializer.save()
+
+class PatientDetailByMedicalIDView(generics.RetrieveUpdateAPIView):
+    """
+    Retrieve detailed information for a specific patient by medical_id.
+    Accessible to authenticated organization or caregiver users.
+    Returns patient details including medical record and user-related fields.
+    """
+    serializer_class = PatientDetailSerializer
+    permission_classes = [IsAuthenticated, IsOrganization | IsCaregiver]
+    lookup_field = 'medical_id'
+
+    def get_queryset(self):
+        """
+        Filter patients to only those belonging to the organization of the authenticated user or caregiver.
+        """
+        user = self.request.user
+        if user.role == UserRoles.ORGANIZATION:
+            organization = user.organization
+        elif user.role == UserRoles.CAREGIVER:
+            organization = user.caregiver.organization
+        else:
+            raise PermissionDenied("You do not have permission to access this resource.")
+        if organization is None:
+            raise NotFound("Organization not found for user.")
+        return Patient.objects.filter(organization=organization).select_related('user').prefetch_related('patientmedicalrecord')
+
+    def get_object(self):
+        """
+        Retrieve a patient by medical_id with custom error handling.
+        """
+        medical_id = self.kwargs[self.lookup_field]
+        try:
+            validate_uuid(medical_id)
+        except ValidationError:
+            raise ValidationError("Invalid medical ID format.")
+        queryset = self.get_queryset()
+        filter_kwargs = {self.lookup_field: medical_id}
+        try:
+            obj = queryset.get(**filter_kwargs)
+            return obj
+        except Patient.DoesNotExist:
+            if Patient.objects.filter(medical_id=medical_id).exists():
+                raise NotFound("Patient does not exist in your organization.")
+            raise NotFound("Patient with the specified medical ID was not found.")
+
+    def update(self, request, *args, **kwargs):
+        """
+        Handle partial updates to patient details, including medical record.
+        Returns the complete updated Patient object with all fields populated.
+        """
+        partial = kwargs.pop('partial', True)  # Default to partial updates
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        
+        # Perform the update
+        updated_instance = serializer.save()
+        
+        # Refresh from database to ensure we have the latest data
+        updated_instance.refresh_from_db()
+        
+        # Create a fresh serializer instance to get the complete representation
+        response_serializer = self.get_serializer(updated_instance)
+        
+        return Response(response_serializer.data, status=200)
+
+    def perform_update(self, serializer):
+        """
+        Save the updated patient and medical record.
+        """
+        # This method is called by serializer.save() in the update method above
+        return serializer.save()
+
+    def patch(self, request, *args, **kwargs):
+        """
+        Handle PATCH requests for partial updates.
+        """
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        """
+        Handle PUT requests for full updates.
+        """
+        kwargs['partial'] = False
+        return self.update(request, *args, **kwargs)
+
 
 
 
