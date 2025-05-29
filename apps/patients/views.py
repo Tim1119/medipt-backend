@@ -113,7 +113,7 @@ class RegisterPatientView(CreateAPIView):
         with transaction.atomic():
             serializer.save()
 
-class PatientDetailByMedicalIDView(generics.RetrieveUpdateAPIView):
+class PatientRegistrationDetailsByMedicalIDView(generics.RetrieveUpdateAPIView):
     """
     Retrieve detailed information for a specific patient by medical_id.
     Accessible to authenticated organization or caregiver users.

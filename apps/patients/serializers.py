@@ -84,7 +84,7 @@ class BasePatientSerializer(serializers.ModelSerializer):
             validator(value)
         return value
 
-class OrganizationRegisterPatientSerializer(BasePatientSerializer):
+class OrganizationRegisterPatientSerializer(PatientRepresentationMixin,BasePatientSerializer):
     email = serializers.EmailField(write_only=True)
     password = serializers.CharField(write_only=True, style={'input_type': 'password'}, validators=[validate_password])
 
