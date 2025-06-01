@@ -16,3 +16,8 @@ class PatientNotificationFailedException(CustomValidationError):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     default_detail = "Patient created but failed to send notification"
     default_code = "patient_notification_failed"
+
+class PatientMedicalIDNotFoundException(CustomValidationError):
+    status_code = status.HTTP_404_NOT_FOUND
+    default_detail = "Patient not found or you do not have access to this patient."
+    default_code = "patient_not_found"

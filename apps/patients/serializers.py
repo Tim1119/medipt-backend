@@ -179,9 +179,202 @@ class PatientDetailSerializer(PatientRepresentationMixin, BasePatientSerializer)
                         patient=instance,
                         **medical_record_data
                     )
-            
-            logger.info(f"Updated patient {instance.medical_id} and medical record")
             return instance
+
+
+
+class DiagnosisSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Patient Diagnoses only. It is used in GroupedDiagnosisDetailsForPatientSerializer for grouping.
+    It is not used in isolation  and does not contain detils, like caregiver, patient and organization unlike PatientDiagnosisDetailsSerializer
+    """
+    class Meta:
+        model = PatientDiagnosisDetails
+        fields = ['id', 'assessment', 'diagnoses', 'medication', 'health_allergies', 'health_care_center', 'notes', 'created_at']
+
+
+
+
+from rest_framework import serializers
+from .models import Patient, PatientDiagnosisDetails
+# from .serializers import PatientDiagnosisDetailsSerializer
+
+# class PatientDiagnosisSerializer(serializers.ModelSerializer):
+#     """
+#     A serializer that combines patient information with grouped diagnoses.
+#     Can also provide detailed diagnosis records when requested.
+#     """
+#     diagnoses = serializers.SerializerMethodField()
+#     patient_profile_picture = serializers.SerializerMethodField()
+#     patient_name = serializers.CharField(source='full_name', read_only=True)
+
+#     class Meta:
+#         model = Patient
+#         fields = ['id', 'patient_name', 'medical_id', 'diagnoses', 'patient_profile_picture', 'address']
+
+#     def get_diagnoses(self, obj):
+#         """
+#         Get diagnosis details for a specific patient.
+#         Returns detailed diagnoses if 'detailed' is True in context, otherwise grouped.
+#         """
+#         detailed = self.context.get('detailed', False)
+#         if hasattr(obj, 'patientdiagnosisdetails_set'):
+#             diagnoses = obj.patientdiagnosisdetails_set.all()
+#         else:
+#             diagnoses = PatientDiagnosisDetails.objects.filter(patient=obj)
+
+#         # if detailed:
+#             # Return detailed diagnosis records
+#         return DiagnosisSerializer(diagnoses, many=True, context=self.context).data
+#         # else:
+#         #     # Return grouped diagnosis data (e.g., just the diagnosis names)
+#         #     return [diagnosis.diagnoses for diagnosis in diagnoses]
+
+#     def get_patient_profile_picture(self, obj):
+#         """
+#         Get the patient's profile picture URL.
+#         """
+#         if obj.profile_picture:
+#             request = self.context.get('request')
+#             relative_url = obj.profile_picture.url
+#             if request:
+#                 return request.build_absolute_uri(relative_url)
+#             return relative_url
+#         return None
+
+
+
+class PatientDiagnosisSerializer(serializers.ModelSerializer):
+    """
+    A serializer that combines patient information with diagnoses.
+    Handles three different views based on context:
+    - 'latest': Shows only the latest diagnosis (for list page)
+    - 'all': Shows all diagnoses (for history page) 
+    - 'single': Shows single diagnosis (handled by separate serializer)
+    """
+    diagnoses = serializers.SerializerMethodField()
+    patient_profile_picture = serializers.SerializerMethodField()
+    patient_name = serializers.CharField(source='full_name', read_only=True)
+    diagnosis_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = ['id', 'patient_name', 'medical_id', 'diagnoses', 'patient_profile_picture', 'address', 'diagnosis_count']
+
+    def get_diagnoses(self, obj):
+        """
+        Get diagnosis details for a specific patient based on view type.
+        """
+        view_type = self.context.get('view_type', 'all')
+        
+        if hasattr(obj, 'patientdiagnosisdetails_set'):
+            diagnoses = obj.patientdiagnosisdetails_set.all()
+        else:
+            diagnoses = PatientDiagnosisDetails.objects.filter(patient=obj).order_by('-created_at')
+
+        if view_type == 'latest':
+            # Return only the latest diagnosis for list page
+            latest_diagnosis = diagnoses.first()
+            if latest_diagnosis:
+                return DiagnosisSerializer([latest_diagnosis], many=True, context=self.context).data
+            return []
+        else:
+            # Return all diagnoses for history page
+            return DiagnosisSerializer(diagnoses, many=True, context=self.context).data
+
+    def get_diagnosis_count(self, obj):
+        """
+        Get total count of diagnoses for this patient.
+        Useful for showing "X diagnoses" in the UI.
+        """
+        if hasattr(obj, 'patientdiagnosisdetails_set'):
+            return obj.patientdiagnosisdetails_set.count()
+        return PatientDiagnosisDetails.objects.filter(patient=obj).count()
+
+    def get_patient_profile_picture(self, obj):
+        """
+        Get the patient's profile picture URL.
+        """
+        if obj.profile_picture:
+            request = self.context.get('request')
+            relative_url = obj.profile_picture.url
+            if request:
+                return request.build_absolute_uri(relative_url)
+            return relative_url
+        return None
+
+
+class SingleDiagnosisSerializer(serializers.ModelSerializer):
+    """
+    Serializer for single diagnosis detail view.
+    Includes patient info and detailed diagnosis information.
+    """
+    patient_name = serializers.CharField(source='patient.full_name', read_only=True)
+    patient_medical_id = serializers.CharField(source='patient.medical_id', read_only=True)
+    patient_profile_picture = serializers.SerializerMethodField()
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    caregiver_name = serializers.CharField(source='caregiver.full_name_with_role', read_only=True)
+    vital_signs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PatientDiagnosisDetails
+        fields = [
+            'id',
+            'patient_name',
+            'patient_medical_id', 
+            'patient_profile_picture',
+            'organization_name',
+            'caregiver_name',
+            'assessment',
+            'diagnoses',
+            'medication',
+            'health_allergies',
+            'health_care_center',
+            'notes',
+            'vital_signs',
+            'created_at',
+            'updated_at'
+        ]
+
+    def get_patient_profile_picture(self, obj):
+        """
+        Get the patient's profile picture URL.
+        """
+        if obj.patient.profile_picture:
+            request = self.context.get('request')
+            relative_url = obj.patient.profile_picture.url
+            if request:
+                return request.build_absolute_uri(relative_url)
+            return relative_url
+        return None
+
+    def get_vital_signs(self, obj):
+        """
+        Get vital signs associated with this diagnosis.
+        """
+        try:
+            vital_signs = obj.vitalsign
+            return {
+                'body_temperature': vital_signs.body_temperature,
+                'pulse_rate': vital_signs.pulse_rate,
+                'blood_pressure': vital_signs.blood_pressure,
+                'blood_oxygen': vital_signs.blood_oxygen,
+                'respiration_rate': vital_signs.respiration_rate,
+                'weight': vital_signs.weight
+            }
+        except VitalSign.DoesNotExist:
+            return None
+
+
+
+
+
+
+
+
+
+
+
 # class PatientDetailSerializer(serializers.ModelSerializer):
 #     """This serializer is used to get detailed information about a patient"""
     

@@ -2,7 +2,9 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 # from .views import (PatientUpdateRegistrationDetailsView,UpdatePatientBasicInfoView,PatientDetailByMedicalIDView,PatientDiagnosisDetailsRecordsView
 #                     ,PatientDiagnosisListView,CreatePatientDiagnosisWithVitalSignView,OrganizationUpdatePatientRegistrationDetailsView)
-from .views import (LatestPatientsView,PatientViewSet,TogglePatientStatusView,RegisterPatientView,PatientRegistrationDetailsByMedicalIDView)
+from .views import (LatestPatientsView,PatientViewSet,TogglePatientStatusView,RegisterPatientView,PatientRegistrationDetailsByMedicalIDView,
+PatientDiagnosisListView,PatientDiagnosisHistoryView,SingleDiagnosisDetailView)
+# PatientDiagnosisView)
 
 router = DefaultRouter()
 router.register('all-patients',PatientViewSet, basename='patient')
@@ -15,6 +17,12 @@ urlpatterns = [
    path('toggle-patient-status/<str:slug>/', TogglePatientStatusView.as_view(),name='toggle-patient-status'),
     path('register-new-patient/', RegisterPatientView.as_view(), name='register-new-patient'),
     path('patient-registration-details-by-medical-id/<str:medical_id>/', PatientRegistrationDetailsByMedicalIDView.as_view(), name='register-new-patient'),
+   #  path('patient-diagnoses/', PatientDiagnosisView.as_view(), name='patient-diagnosis'),
+
+   path('patients-diagnoses/', PatientDiagnosisListView.as_view(), name='patient-diagnosis-list'),
+   path('patient-diagnoses-history/<str:medical_id>/', PatientDiagnosisHistoryView.as_view(), name='patient-diagnosis-history'),
+   path('patient-diagnoses-detail/<uuid:id>/', SingleDiagnosisDetailView.as_view(), name='diagnosis-detail'),
+
    # path('update-patient-registration-details/<uuid:id>/',PatientUpdateRegistrationDetailsView.as_view(),name='update-patient-registration-details'),
    # path('update-patient-registration-details/<str:medical_id>/',OrganizationUpdatePatientRegistrationDetailsView.as_view(),name='update-patient-registration-details'),
    # path('update-patient-basic_info/<uuid:id>/',UpdatePatientBasicInfoView.as_view(),name='update-patient-basic-info'),

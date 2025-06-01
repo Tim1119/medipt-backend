@@ -1,10 +1,12 @@
 from django.shortcuts import render,get_object_or_404
-from .serializers import OrganizationRegisterPatientSerializer,PatientDetailSerializer,PatientSerializer
+from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import ListModelMixin
+from .serializers import OrganizationRegisterPatientSerializer,PatientDetailSerializer,PatientSerializer,DiagnosisSerializer
 # from .serializers import PatientBasicInfoSerializer, PatientDetailSerializer, UpdatePatientRegistrationDetailsSerializer,UpdatePatientBasicInfoSerializer,PatientSerializer,PatientDiagnosisDetailsSerializer,PatientDiagnosisListSerializer,CreatePatientDiagnosisWithVitalSignSerializer,OrganizationUpdatePatientRegistrationDetailsSerializer
 from .models import Patient, PatientDiagnosisDetails
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import UpdateAPIView,RetrieveAPIView,ListAPIView,CreateAPIView
-from .exceptions import PatientNotFoundException
+from .exceptions import PatientNotFoundException,PatientMedicalIDNotFoundException
 from shared.validators import validate_uuid
 from rest_framework.exceptions import ValidationError
 from .permissions import IsAllowedToUpdatePatientRegistrationDetails,IsPatient
@@ -21,9 +23,10 @@ from django.db import transaction
 from rest_framework.mixins import RetrieveModelMixin,UpdateModelMixin,DestroyModelMixin,ListModelMixin
 from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
 from shared.pagination import StandardResultsSetPagination
 from rest_framework import generics
+
 
 
 
@@ -200,8 +203,308 @@ class PatientRegistrationDetailsByMedicalIDView(generics.RetrieveUpdateAPIView):
         return self.update(request, *args, **kwargs)
 
 
+from rest_framework.views import APIView
+from .serializers import PatientDiagnosisSerializer, SingleDiagnosisSerializer
+
+# Alternative approach using separate endpoints (RECOMMENDED)
+class PatientDiagnosisListView(ListAPIView):
+    """
+    Page 1: List of patients with their latest diagnosis only
+    GET /api/patients/diagnoses/
+    """
+    serializer_class = PatientDiagnosisSerializer
+    permission_classes = [IsAuthenticated, IsOrganization]
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['first_name', 'last_name', 'medical_id']
+    ordering_fields = ['created_at', 'first_name', 'last_name']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        return (
+            Patient.objects
+            .prefetch_related(
+                Prefetch(
+                    'patientdiagnosisdetails_set',
+                    queryset=PatientDiagnosisDetails.objects.select_related('caregiver').order_by('-created_at')
+                )
+            )
+            .filter(patientdiagnosisdetails__isnull=False)
+            .distinct()
+            .order_by('-created_at')
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['view_type'] = 'latest'
+        return context
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            "success": True,
+            "message": "Patients with latest diagnoses retrieved successfully",
+            "data": response.data
+        })
 
 
+# class PatientDiagnosisHistoryView(ListModelMixin, GenericAPIView):
+#     """
+#     Page 2: All diagnoses for a specific patient
+#     GET /api/patients/{medical_id}/diagnoses/
+#     """
+#     serializer_class = PatientDiagnosisSerializer
+#     permission_classes = [IsAuthenticated, IsOrganization]
+#     pagination_class = StandardResultsSetPagination
+#     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+#     search_fields = ['assessment', 'diagnoses', 'medication']
+#     ordering_fields = ['created_at', 'assessment']
+#     ordering = ['-created_at']
+
+#     def get(self, request, *args, **kwargs):
+#         return self.list(request, *args, **kwargs)
+
+#     def get_queryset(self):
+#         """
+#         Filter patients to only those belonging to the organization of the authenticated user or caregiver.
+#         """
+#         user = self.request.user
+#         if user.role == UserRoles.ORGANIZATION:
+#             organization = user.organization
+#         elif user.role == UserRoles.CAREGIVER:
+#             organization = user.caregiver.organization
+#         else:
+#             raise PermissionDenied("You do not have permission to access this resource.")
+        
+#         if organization is None:
+#             raise NotFound("Organization not found for user.")
+        
+#         medical_id = self.kwargs.get('medical_id')
+#         if not medical_id:
+#             # return Patient.objects.none()
+#             raise PatientMedicalIDNotFoundException()
+        
+#         # Filter patients by organization and medical_id
+#         return Patient.objects.filter(
+#             organization=organization,
+#             medical_id=medical_id
+#         ).select_related('user').prefetch_related('patientmedicalrecord', 'patientdiagnosisdetails_set')
+
+#     def list(self, request, *args, **kwargs):
+#         medical_id = self.kwargs.get('medical_id')
+        
+#         # Check if patient exists and belongs to the organization
+#         try:
+#             patient = Patient.objects.get(
+#                 medical_id=medical_id,
+#                 organization=self.request.user.organization if self.request.user.role == UserRoles.ORGANIZATION else self.request.user.caregiver.organization
+#             )
+#         except Patient.DoesNotExist:
+#             raise PatientNotFoundException()
+        
+#         # Use the Patient instance with the serializer
+#         serializer = self.get_serializer(patient, context={'request': request, 'view_type': 'all'})
+        
+#         # Get the diagnoses queryset for counting and pagination
+#         diagnoses_queryset = PatientDiagnosisDetails.objects.filter(
+#             patient=patient
+#         ).select_related('caregiver', 'patient', 'organization').prefetch_related('vitalsign')
+        
+#         # Apply filters to diagnoses queryset
+#         diagnoses_queryset = self.filter_queryset(diagnoses_queryset)
+        
+#         # Paginate the diagnoses
+#         page = self.paginate_queryset(diagnoses_queryset)
+#         if page is not None:
+#             diagnoses_serializer = DiagnosisSerializer(page, many=True, context={'request': request})
+#             response = self.get_paginated_response(diagnoses_serializer.data)
+#             patient_data = PatientDiagnosisSerializer(patient, context={'request': request})
+#             response.data['patient_info'] = patient_data.data,
+#             return response
+
+#         # If not paginating, return all diagnoses
+#         diagnoses_serializer = DiagnosisSerializer(diagnoses_queryset, many=True, context={'request': request})
+#         patient_data = PatientDiagnosisSerializer(patient, context={'request': request})
+#         return Response({
+#             'success': True,
+#             'message': 'Diagnosis history retrieved successfully',
+#             'patient_info': patient_data.data,
+#             'data': diagnoses_serializer.data
+#         })
+# class PatientDiagnosisHistoryView(generics.ListAPIView):
+#     """
+#     Alternative: List view without pagination
+#     GET /api/patients/{medical_id}/diagnoses/
+#     """
+#     serializer_class = PatientDiagnosisSerializer
+#     permission_classes = [IsAuthenticated, IsOrganization]
+#     # Remove pagination
+#     pagination_class = None
+#     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+#     search_fields = ['assessment', 'diagnoses', 'medication']
+#     ordering_fields = ['created_at', 'assessment']
+#     ordering = ['-created_at']
+
+#     def get_queryset(self):
+#         """
+#         This won't be used since we override list method
+#         """
+#         return PatientDiagnosisDetails.objects.none()
+
+#     def list(self, request, *args, **kwargs):
+#         """
+#         Return patient info with all their diagnoses.
+#         """
+#         user = self.request.user
+#         if user.role == UserRoles.ORGANIZATION:
+#             organization = user.organization
+#         elif user.role == UserRoles.CAREGIVER:
+#             organization = user.caregiver.organization
+#         else:
+#             raise PermissionDenied("You do not have permission to access this resource.")
+        
+#         if organization is None:
+#             raise NotFound("Organization not found for user.")
+        
+#         medical_id = self.kwargs.get('medical_id')
+#         if not medical_id:
+#             raise PatientMedicalIDNotFoundException()
+        
+#         # Get the patient
+#         try:
+#             patient = Patient.objects.get(
+#                 medical_id=medical_id,
+#                 organization=organization
+#             )
+#         except Patient.DoesNotExist:
+#             raise PatientNotFoundException()
+        
+#         # Get all diagnoses for the patient
+#         diagnoses_queryset = PatientDiagnosisDetails.objects.filter(
+#             patient=patient
+#         ).select_related('caregiver', 'patient', 'organization').prefetch_related('vitalsign')
+        
+#         # Apply filtering, searching, and ordering
+#         diagnoses_queryset = self.filter_queryset(diagnoses_queryset)
+        
+#         # Serialize the patient with diagnoses
+#         patient_serializer = PatientDiagnosisSerializer(
+#             patient,
+#             context={'request': request, 'diagnoses_queryset': diagnoses_queryset}
+#         )
+        
+#         return Response({
+#             'success': True,
+#             'message': 'Patient diagnosis history retrieved successfully',
+#             'data': patient_serializer.data
+            
+#         })
+
+class PatientDiagnosisHistoryView(generics.RetrieveAPIView):
+    """
+    Get patient details with all their diagnoses
+    GET /api/patients/{medical_id}/diagnoses/
+    """
+    serializer_class = PatientDiagnosisSerializer
+    permission_classes = [IsAuthenticated, IsOrganization]
+    lookup_field = 'medical_id'
+    lookup_url_kwarg = 'medical_id'
+
+    def get_queryset(self):
+        """
+        Return patients filtered by organization.
+        """
+        user = self.request.user
+        if user.role == UserRoles.ORGANIZATION:
+            organization = user.organization
+        elif user.role == UserRoles.CAREGIVER:
+            organization = user.caregiver.organization
+        else:
+            raise PermissionDenied("You do not have permission to access this resource.")
+        
+        if organization is None:
+            raise NotFound("Organization not found for user.")
+        
+        return Patient.objects.filter(organization=organization)
+
+    def get_object(self):
+        """
+        Get the patient object with their diagnoses.
+        """
+        queryset = self.get_queryset()
+        medical_id = self.kwargs.get('medical_id')
+        
+        if not medical_id:
+            raise PatientMedicalIDNotFoundException()
+        
+        try:
+            patient = queryset.get(medical_id=medical_id)
+        except Patient.DoesNotExist:
+            raise PatientNotFoundException()
+        
+        return patient
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Return patient info with all their diagnoses.
+        """
+        patient = self.get_object()
+        
+        # Get all diagnoses for the patient (you can add filtering/ordering here if needed)
+        diagnoses = PatientDiagnosisDetails.objects.filter(
+            patient=patient
+        ).select_related('caregiver', 'patient', 'organization').prefetch_related('vitalsign').order_by('-created_at')
+        
+        # Apply search filtering if search query is provided
+        search_query = request.GET.get('search', None)
+        if search_query:
+            diagnoses = diagnoses.filter(
+                Q(assessment__icontains=search_query) |
+                Q(diagnoses__icontains=search_query) |
+                Q(medication__icontains=search_query)
+            )
+        
+        # Apply ordering if specified
+        ordering = request.GET.get('ordering', '-created_at')
+        if ordering:
+            diagnoses = diagnoses.order_by(ordering)
+        
+        # Serialize the data
+        patient_serializer = PatientDiagnosisSerializer(
+            patient,
+            context={'request': request, 'diagnoses_queryset': diagnoses}
+        )
+        
+        return Response({
+            'success': True,
+            'message': 'Patient diagnosis history retrieved successfully',
+            'data':  patient_serializer.data
+        })
+
+
+
+
+class SingleDiagnosisDetailView(RetrieveAPIView):
+    """
+    Page 3: Detailed view of a single diagnosis
+    GET /api/diagnoses/{id}/
+    """
+    serializer_class = SingleDiagnosisSerializer
+    permission_classes = [IsAuthenticated, IsOrganization]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        return PatientDiagnosisDetails.objects.select_related(
+            'patient', 'organization', 'caregiver'
+        ).prefetch_related('vitalsign')
+
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            "success": True,
+            "message": "Diagnosis details retrieved successfully",
+            "data": response.data
+        })
 
 
 
