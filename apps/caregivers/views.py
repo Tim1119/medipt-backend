@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import CaregiverSerializer
+from .serializers import CaregiverSerializer,CaregiverBasicInfoSerializer
 from rest_framework.generics import ListAPIView,CreateAPIView,UpdateAPIView,RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOrganizationOrCaregiver
@@ -93,55 +93,15 @@ class ToggleCaregiverStatusView(UpdateAPIView):
         return Response({ "message": "Caregiver status toggled successfully", "data": serializer.data},status=status.HTTP_200_OK)
     
 
+class OrganizationAllCaregiversBasicInfoView(ListAPIView):
 
-
-
-
-
-
-# class LatestCaregiverListView(ListAPIView):
-#     """
-#     Lists the 4 most recently hired caregivers for the organization.
-#     """
-#     permission_classes = [IsAuthenticated, IsOrganizationCaregiverAccess]
-#     serializer_class = CaregiverSerializer
-
-#     def get_queryset(self):
-#         if not self.request.user.organization:
-#             raise NotFound("Organization not found for user.")
-#         return Caregiver.objects.filter(
-#             organization=self.request.user.organization,
-#             is_active=True,
-#             user__is_verified=True
-#         ).order_by('-hire_date', '-created_at')[:4]
-
-
-# class OrganizationLatestCaregiversListView(ListAPIView):
-#     """
-#     Lists top 10 latest caregivers associated with the authenticated organization based on filter criteria.
-#     """
-#     permission_classes = [IsAuthenticated, IsOrganization]
-#     serializer_class = CaregiverSerializer
-
-#     def get_queryset(self):
-#         if self.request.user.organization is None:
-#             raise NotFound("Organization not found for user.")
-#         return Caregiver.objects.filter(organization=self.request.user.organization,user__is_active=True,user__is_verified=True)[:10]
+    """
+    Retrieve all caregivers and basic information about them for an organization.
+    """
     
+    serializer_class = CaregiverBasicInfoSerializer
+    permission_classes = [IsAuthenticated,IsOrganization]
 
-
-# class OrganizationCaregiversListView(ListAPIView):
-#     """
-#     Lists caregivers associated with the authenticated organization based on filter criteria.
-#     """
-#     permission_classes = [IsAuthenticated, IsOrganization]
-#     serializer_class = CaregiverSerializer
-#     # pagination_class = StandardResultsSetPagination
-#     # filter_backends = [SearchFilter]
-#     # search_fields = ['first_name', 'last_name', 'staff_number', 'caregiver_type']
-
-#     def get_queryset(self):
-#         if self.request.user.organization is None:
-#             raise NotFound("Organization not found for user.")
-#         return Caregiver.objects.filter(organization=self.request.user.organization,user__is_active=True,user__is_verified=True)
-
+    def get_queryset(self):
+        organization = self.request.user.organization
+        return Caregiver.objects.filter(organization=organization)

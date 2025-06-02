@@ -314,6 +314,7 @@ class SingleDiagnosisSerializer(serializers.ModelSerializer):
     patient_profile_picture = serializers.SerializerMethodField()
     organization_name = serializers.CharField(source='organization.name', read_only=True)
     caregiver_name = serializers.CharField(source='caregiver.full_name_with_role', read_only=True)
+    caregiver_id = serializers.CharField(source='caregiver.id', read_only=True)
     vital_signs = serializers.SerializerMethodField()
 
     class Meta:
@@ -325,6 +326,7 @@ class SingleDiagnosisSerializer(serializers.ModelSerializer):
             'patient_profile_picture',
             'organization_name',
             'caregiver_name',
+            'caregiver_id',
             'assessment',
             'diagnoses',
             'medication',
@@ -365,11 +367,98 @@ class SingleDiagnosisSerializer(serializers.ModelSerializer):
         except VitalSign.DoesNotExist:
             return None
 
+class VitalSignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VitalSign
+        fields = ['body_temperature', 'pulse_rate', 'blood_pressure', 'blood_oxygen', 'respiration_rate']
 
 
+class PatientDiagnosisWithVitalSignSerializer(serializers.ModelSerializer):
+    patient = serializers.PrimaryKeyRelatedField(read_only=True)
+    organization = serializers.PrimaryKeyRelatedField(read_only=True)
+    caregiver = serializers.PrimaryKeyRelatedField(read_only=True)
+    vital_sign = VitalSignSerializer(write_only=True, required=False)  # Optional for updates
+
+    # Response fields
+    patient_name = serializers.CharField(source='patient.full_name', read_only=True)
+    patient_profile_picture = serializers.SerializerMethodField()
+    patient_medical_id = serializers.CharField(source='patient.medical_id', read_only=True)
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    caregiver_name = serializers.CharField(source='caregiver.name', read_only=True)
+    slug = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        model = PatientDiagnosisDetails
+        fields = [
+            'id', 'patient', 'organization', 'caregiver', 'assessment', 'health_care_center', 
+            'diagnoses', 'medication', 'notes', 'health_allergies', 'vital_sign', 'patient_name',
+            'patient_profile_picture', 'patient_medical_id', 'organization_name', 'caregiver_name',
+            'slug', 'created_at'
+        ]
+
+    def get_patient_profile_picture(self, obj):
+        if obj.patient.profile_picture:
+            request = self.context.get('request')
+            relative_url = obj.patient.profile_picture.url
+            if request:
+                return request.build_absolute_uri(relative_url)
+            return relative_url
+        return None
+
+    def create(self, validated_data):
+        vital_sign_data = validated_data.pop('vital_sign', None)
+        try:
+            with transaction.atomic():
+                patient_diagnosis = PatientDiagnosisDetails.objects.create(**validated_data)
+                if vital_sign_data:
+                    vital_sign_serializer = VitalSignSerializer(data=vital_sign_data)
+                    vital_sign_serializer.is_valid(raise_exception=True)
+                    VitalSign.objects.create(
+                        patient_diagnoses_details=patient_diagnosis, 
+                        **vital_sign_serializer.validated_data
+                    )
+            return patient_diagnosis
+        except IntegrityError as e:
+            raise ValidationError(f"Database error: {str(e)}")
+
+    def update(self, instance, validated_data):
+        vital_sign_data = validated_data.pop('vital_sign', None)
+        try:
+            with transaction.atomic():
+                # Update PatientDiagnosisDetails instance
+                for attr, value in validated_data.items():
+                    setattr(instance, attr, value)
+                instance.save()
+
+                # Update or create VitalSign instance
+                if vital_sign_data:
+                    vital_sign_serializer = VitalSignSerializer(data=vital_sign_data)
+                    vital_sign_serializer.is_valid(raise_exception=True)
+                    VitalSign.objects.update_or_create(
+                        patient_diagnoses_details=instance,
+                        defaults=vital_sign_serializer.validated_data
+                    )
+            return instance
+        except IntegrityError as e:
+            raise ValidationError(f"Database error: {str(e)}")
 
 
+class PatientBasicInfoSerializer(serializers.ModelSerializer):
+    patient_name = serializers.CharField(source='full_name', read_only=True)
+    profile_picture = serializers.SerializerMethodField()
 
+    class Meta:
+        model = Patient
+        fields = [
+            'id',
+            'patient_name',
+            'medical_id',
+            'profile_picture',
+        ]
+
+    def get_profile_picture(self, obj):
+        return obj.profile_picture_url
 
 
 

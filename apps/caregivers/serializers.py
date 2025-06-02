@@ -18,3 +18,10 @@ class BasicCaregiverSerializer(CaregiverSerializer):
     class Meta:
         model = Caregiver
         fields = ['id','caregiver_name']
+
+class CaregiverBasicInfoSerializer(CaregiverSerializer):
+    '''This serializer is used to create a health record (vital sign/diagnosis) the view uses it to send list of serializers'''
+    caregiver_name = serializers.CharField(source='full_name_with_role', read_only=True)
+    class Meta:
+        model = Caregiver
+        fields = ['id','caregiver_name']
