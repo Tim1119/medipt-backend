@@ -10,7 +10,7 @@ services:
     plan: free
     runtime: python
     buildCommand: './build.sh'
-    startCommand: 'gunicorn medipt.wsgi:application'
+    startCommand: 'python -m gunicorn medipt.asgi:application -k uvicorn.workers.UvicornWorker'
     envVars:
       - key: DATABASE_URL
         fromDatabase:
