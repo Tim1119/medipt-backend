@@ -7,6 +7,11 @@ class OrganizationSignupException(CustomValidationError):
     default_detail = "Failed to register organization."
     default_code = "organization_registration_failed"
     
+class OrganizationVerificationEmailFailedException(CustomValidationError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = "Failed to send organization verification email."
+    default_code = "organization_registration_failed"
+
 class ActivationLinkExpiredException(CustomValidationError):
     status_code = status.HTTP_400_BAD_REQUEST
     default_detail = "Activation link has expired."

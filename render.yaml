@@ -5,6 +5,11 @@ databases:
     user: neondb_owner
 
 services:
+  - type: redis
+    name: medipt-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
   - type: web
     name: medipt
     plan: free
@@ -34,7 +39,17 @@ services:
         value: https://medipt-frontend.vercel.app
       - key: REACT_FRONTEND_URL
         value: https://medipt-frontend.vercel.app
-  
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: medipt-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: medipt-redis
+          property: connectionString
+
   - type: worker
     name: medipt-worker
     runtime: python
@@ -55,4 +70,13 @@ services:
         value: "327917192738971"
       - key: CLOUDINARY_API_SECRET
         value: _Su-FYpVRyzArvScIX_ncHMvhGw
-
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: medipt-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: medipt-redis
+          property: connectionString
