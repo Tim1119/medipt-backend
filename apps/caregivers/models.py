@@ -14,7 +14,7 @@ from apps.accounts.models import User
 from apps.organizations.models import Organization
 from .utils import role_abbreviation
 from datetime import date
-
+from cloudinary.models import CloudinaryField
 
 
 class Caregiver(TimeStampedUUID):
@@ -26,10 +26,17 @@ class Caregiver(TimeStampedUUID):
     caregiver_type = models.CharField(max_length=30,choices=CaregiverTypes.choices)
     date_of_birth = models.DateField(blank=True,null=True)
     marital_status = models.CharField(max_length=30,choices=MaritalStatus.choices,verbose_name=_("Caregiver Marital Status"),blank=True,null=True)
-    profile_picture = ProcessedImageField(upload_to='caregiver_profile_pictures', default='default.png',processors=[ResizeToFill(100, 50)],
-                                           format='JPEG',
-                                           options={'quality': 80},
-                                           validators=[ FileExtensionValidator(allowed_extensions=['jpg', 'png', 'jpeg'])])
+    # profile_picture = ProcessedImageField(upload_to='caregiver_profile_pictures', default='default.png',processors=[ResizeToFill(100, 50)],
+    #                                        format='JPEG',
+    #                                        options={'quality': 80},
+    #                                        validators=[ FileExtensionValidator(allowed_extensions=['jpg', 'png', 'jpeg'])])
+    profile_picture = CloudinaryField(
+        'image',
+        folder='caregiver_profile_pictures',
+        default='default.png',
+        allowed_formats=['jpg', 'png', 'jpeg'],
+        transformation=[{'width': 100, 'height': 50, 'crop': 'fill', 'quality': 80}]
+    )
     gender = models.CharField(max_length=20,choices=Gender.choices,blank=True,null=True)
     phone_number=models.CharField(max_length=15,validators=[validate_phone_number],blank=True,null=True)
     address = models.TextField(verbose_name=_("Caregiver's Address"),blank=True,null=True)

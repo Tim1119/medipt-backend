@@ -1,0 +1,26 @@
+databases:
+  - name: mediptdb
+    plan: free
+    databaseName: neondb
+    user: neondb_owner
+
+services:
+  - type: web
+    name: medipt
+    plan: free
+    runtime: python
+    buildCommand: './build.sh'
+    startCommand: 'python -m gunicorn medipt.asgi:application -k uvicorn.workers.UvicornWorker'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mediptdb
+          property: connectionString
+      - key: SECRET_KEY
+        value: django-insecure-c4zh5y#g=%)3d3ic#9d+5lpuz(audz9jf3fq*8nkf5_%bf=vbe
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: your-production-domain.com
+      - key: WEB_CONCURRENCY
+        value: 4
