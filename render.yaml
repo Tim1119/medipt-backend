@@ -1,15 +1,18 @@
+# render.yaml - Full configuration for Django, Celery, and Redis on Render
+
 databases:
   - name: mediptdb
     plan: free
     databaseName: neondb
     user: neondb_owner
+
 services:
   - type: web
     name: medipt
     plan: free
     runtime: python
-    buildCommand: './build.sh'
-    startCommand: 'python -m gunicorn medipt.asgi:application -k uvicorn.workers.UvicornWorker'
+    buildCommand: "./build.sh"
+    startCommand: "python -m gunicorn medipt.asgi:application -k uvicorn.workers.UvicornWorker"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -37,12 +40,13 @@ services:
         value: redis://default:FszoolJkRjqAFZXieycVFIEazGFgPCKF@ballast.proxy.rlwy.net:27731
       - key: CELERY_RESULT_BACKEND
         value: redis://default:FszoolJkRjqAFZXieycVFIEazGFgPCKF@ballast.proxy.rlwy.net:27731
-  
+
   - type: worker
     name: medipt-worker
+    plan: free  # Ensure this matches your Render plan
     runtime: python
-    buildCommand: './build.sh'
-    startCommand: 'celery -A medipt worker --loglevel=info'
+    buildCommand: "./build.sh"
+    startCommand: "celery -A medipt worker --loglevel=info"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
