@@ -1,8 +1,6 @@
 from pathlib import Path
 import os
-import logging.config
-import logging
-from django.utils.log import DEFAULT_LOGGING
+import cloudinary 
 import environ
 from datetime import timedelta
 from pathlib import Path
@@ -21,6 +19,8 @@ environ.Env.read_env(BASE_DIR / ".env")
 SECRET_KEY=env('SECRET_KEY')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env('ALLOWED_HOSTS').split(" ")
+
+
 
 
 # Application definition
@@ -43,6 +43,8 @@ LOCAL_APPS = [
 ]
 
 THIRD_PARTY_APPS=[
+    'cloudinary_storage',  # Add before imagekit if still using it
+    'cloudinary',
     'imagekit',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -59,6 +61,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -139,7 +142,15 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
+# STATIC_ROOT = BASE_DIR / "staticfiles"
+
+if not DEBUG:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+else:
+    STATICFILES_DIRS = [BASE_DIR / "static"]
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # STATICFILES_DIRS = [BASE_DIR / "static",]
 
 
@@ -151,53 +162,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
-# -------------------------------------------------------- LOGS --------------------------------------------------
-logger = logging.getLogger(__name__)
-
-LOG_LEVEL = "INFO"
-
-logging.config.dictConfig(
-    {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "console": {
-                "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-            },
-            "file": {"format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"},
-            "django.server": DEFAULT_LOGGING["formatters"]["django.server"],
-        },
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "formatter": "console",
-            },
-            "file": {
-                "level": "INFO",
-                "class": "logging.FileHandler",
-                "formatter": "file",
-                "filename": "logs/medipt.log",
-            },
-            "django.server": DEFAULT_LOGGING["handlers"]["django.server"],
-        },
-        "loggers": {
-            "": {"level": "INFO", "handlers": ["console", "file"], "propagate": False},
-            "apps": {"level": "INFO", "handlers": ["console"], "propagate": False},
-            "django.server": DEFAULT_LOGGING["loggers"]["django.server"],
-        },
-    }
-)
 
 AUTH_USER_MODEL = 'accounts.User'
-
-SIMPLE_JWT = {
-    'AUTH_HEADER_TYPES': ('Bearer','JWT'),
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=3),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'SIGNING_KEY': env('SECRET_KEY'),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),   
-}
 
 DRF_STANDARDIZED_ERRORS = {"EXCEPTION_FORMATTER_CLASS": "shared.custom_exception_handler.MyExceptionFormatter"}
 
@@ -216,20 +182,21 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=300),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "ALGORITHM": "HS256",
-    "SIGNING_KEY": env('SECRET_KEY'),
-    "VERIFYING_KEY": None,
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "USER_ID_FIELD": "id",
-    "USER_ID_CLAIM": "user_id",
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
-    "TOKEN_TYPE_CLAIM": "token_type",
-    "JTI_CLAIM": "jti",
-    "BLACKLIST_ENABLED": True, 
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5000),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': env('SECRET_KEY'),
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'JTI_CLAIM': 'jti',
+    'BLACKLIST_ENABLED': True,
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
 }
 
 
@@ -244,14 +211,6 @@ SWAGGER_SETTINGS = {
     },
 }
 
-# CORS_ALLOWED_ORIGINS = [
-#     'http://localhost:3000/',
-# ]
-
-
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",  # Frontend URL
-# ]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -259,3 +218,10 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 INVITATION_EXPIRY_DAYS = 7  # Default to 7 days
 MAX_INVITATION_RESENDS = 3  # Maximum resends allowed
+
+cloudinary.config(
+    cloud_name=env('CLOUDINARY_CLOUD_NAME'),
+    api_key=env('CLOUDINARY_API_KEY'),
+    api_secret=env('CLOUDINARY_API_SECRET'),
+    secure=True
+)

@@ -9,6 +9,40 @@ from apps.patients.models import PatientMedicalRecord
 from .models import Organization
 
 
+class OrganizationSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', required=True)
+    organization_logo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Organization
+        fields = ['id', 'name',  'logo', 'address', 'phone_number', 'slug', 'email', 'organization_logo_url']
+        read_only_fields = ['id', 'slug', 'organization_logo_url']
+
+    
+    def get_organization_logo_url(self, obj):
+        request = self.context.get("request")
+        if obj.logo and request:
+            return request.build_absolute_uri(obj.logo.url)
+        return None
+
+
+    def update(self, instance, validated_data):
+        # Extract user data
+        user_data = validated_data.pop('user', {})
+        email = user_data.get('email')
+
+        # Update organization fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        # Update user email if provided
+        if email:
+            instance.user.email = email
+            instance.user.save()
+
+        instance.save()
+        return instance
+
 
 class OrganizationRegisterPatientSerializer(serializers.ModelSerializer):
 

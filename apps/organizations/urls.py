@@ -1,11 +1,12 @@
 from django.urls import path,include
 # from .views import (OrganizationDashboardView, OrganizationHealthRecordHistory,OrganizationLatestCaregiversListView,OrganizationCaregiversListView,OrganizationLatestPatientListView,OrganizationPatientListView,OrganizationCreatePatientView,OrganizationBasicInfoView,
 #                     OrganizationToggleCaregiverStatusView,OrganizationBasicCaregiversInfoListView,OrganizationTogglePatientStatusView)
-from .views import (OrganizationDashboardView)
+from .views import (OrganizationDashboardView,OrganizationProfileView)
 
 
 urlpatterns = [
    path('organization-statistics/',OrganizationDashboardView.as_view(),name='organization-statistics'),
+   path('profile/', OrganizationProfileView.as_view(), name='organization_profile'),
    # path('organization-latest-caregivers-list/',OrganizationLatestCaregiversListView.as_view(),name='organization-latest-caregivers-list'),
    # path('organization-all-caregivers-list/',OrganizationCaregiversListView.as_view(),name='organization-all-caregivers-list'),
    # path('organization-latest-patients-list/',OrganizationLatestPatientListView.as_view(),name='organization-latest-patients-list'),

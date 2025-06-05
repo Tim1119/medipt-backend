@@ -30,6 +30,7 @@ from django.db.models import Prefetch
 # from apps.caregivers.permissions import IsCaregiver
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import RetrieveUpdateAPIView
+from .serializers import OrganizationSerializer
 
 
 class OrganizationDashboardView(APIView):
@@ -69,6 +70,22 @@ class OrganizationDashboardView(APIView):
 
         return Response({"message": "Organization Dashboard Data", "data": response_data}, status=status.HTTP_200_OK)
 
+
+class OrganizationProfileView(APIView):
+    permission_classes = [IsAuthenticated, IsOrganization]
+
+    def get(self, request):
+        organization = get_object_or_404(Organization, user=request.user)
+        serializer = OrganizationSerializer(organization, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        organization = get_object_or_404(Organization, user=request.user)
+        serializer = OrganizationSerializer(organization, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class OrganizationLatestCaregiversListView(ListAPIView):
 #     """

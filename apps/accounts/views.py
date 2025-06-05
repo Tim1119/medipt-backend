@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .exceptions import (OrganizationSignupException,ActivationLinkExpiredException,
 InvalidActivationTokenException,UserDoesNotExistException,AccountAlreadyActiveException,
-InvalidLoginCredentialsException,LoginAccountException,InvalidRefreshTokenException,InvalidPasswordResetTokenException
+InvalidLoginCredentialsException,LoginAccountException,InvalidRefreshTokenException,InvalidPasswordResetTokenException,OrganizationVerificationEmailFailedException
 )
 from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
@@ -40,6 +40,10 @@ class OrganizationSignupView(generics.GenericAPIView):
                 organization_user = organization.user
                 organization_email = organization_user.email
                 current_site_domain = get_current_site(request).domain
+                try:
+                    send_organization_activation_email.delay(current_site_domain, organization_email)
+                except Exception as email_error:
+                    raise OrganizationVerificationEmailFailedException()
                 send_organization_activation_email.delay(current_site_domain, organization_email)
     
                 return Response({"message": "Organization registered successfully","data":serializer.data}, status=status.HTTP_201_CREATED)

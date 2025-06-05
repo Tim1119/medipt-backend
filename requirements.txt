@@ -1,48 +1,63 @@
-archspec @ file:///home/conda/feedstock_root/build_artifacts/archspec_1708969572489/work
-boltons @ file:///home/conda/feedstock_root/build_artifacts/boltons_1733827268945/work
-Brotli @ file:///Users/runner/miniforge3/conda-bld/brotli-split_1725267563793/work
-certifi @ file:///home/conda/feedstock_root/build_artifacts/certifi_1725278078093/work/certifi
-cffi @ file:///Users/runner/miniforge3/conda-bld/cffi_1725560578465/work
-charset-normalizer @ file:///home/conda/feedstock_root/build_artifacts/charset-normalizer_1733218092148/work
+amqp==5.3.1
+asgiref==3.8.1
+billiard==4.2.1
+Brotli==1.1.0
+celery==5.4.0
+certifi==2025.4.26
+charset-normalizer==3.4.2
 click==8.1.8
-colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1733218098505/work
-conda @ file:///Users/runner/miniforge3/conda-bld/conda_1732552618940/work
-conda-libmamba-solver @ file:///home/conda/feedstock_root/build_artifacts/conda-libmamba-solver_1733314767897/work/src
-conda-package-handling @ file:///home/conda/feedstock_root/build_artifacts/conda-package-handling_1733855758490/work
-conda_package_streaming @ file:///home/conda/feedstock_root/build_artifacts/conda-package-streaming_1729004031731/work
-distro @ file:///home/conda/feedstock_root/build_artifacts/distro_1704321475663/work
-frappe-bench==5.23.0
-frozendict @ file:///Users/runner/miniforge3/conda-bld/frozendict_1728841362247/work
-gitdb==4.0.12
-GitPython==3.1.44
-h2 @ file:///home/conda/feedstock_root/build_artifacts/h2_1733298745555/work
-honcho==2.0.0
-hpack @ file:///home/conda/feedstock_root/build_artifacts/hpack_1733299205993/work
-hyperframe @ file:///home/conda/feedstock_root/build_artifacts/hyperframe_1733298771451/work
-idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1733211830134/work
-Jinja2==3.1.5
-jsonpatch @ file:///home/conda/feedstock_root/build_artifacts/jsonpatch_1733814567314/work
-jsonpointer @ file:///Users/runner/miniforge3/conda-bld/jsonpointer_1725302931775/work
-libmambapy @ file:///Users/runner/miniforge3/conda-bld/mamba-split_1734026882719/work/libmambapy
-MarkupSafe==3.0.2
-menuinst @ file:///Users/runner/miniforge3/conda-bld/menuinst_1731147022576/work
-packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1733203243479/work
-platformdirs @ file:///home/conda/feedstock_root/build_artifacts/platformdirs_1733232627818/work
-pluggy @ file:///home/conda/feedstock_root/build_artifacts/pluggy_1733222765875/work
-pycosat @ file:///Users/runner/miniforge3/conda-bld/pycosat_1732588505673/work
-pycparser @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_pycparser_1733195786/work
-PySocks @ file:///home/conda/feedstock_root/build_artifacts/pysocks_1733217236728/work
-python-crontab==2.6.0
+click-didyoumean==0.3.1
+click-plugins==1.1.1
+click-repl==0.3.0
+cloudinary==1.44.0
+cron-descriptor==1.4.5
+dj-database-url==0.5.0
+Django==5.1.6
+django-appconf==1.1.0
+django-autoslug==1.9.9
+django-celery-beat==2.7.0
+django-celery-results==2.5.1
+django-cloudinary-storage==0.3.0
+django-cors-headers==4.7.0
+django-environ==0.12.0
+django-filter==25.1
+django-imagekit==5.0.0
+django-soft-delete==1.0.18
+django-softdelete==0.11.5
+django-timezone-field==7.1
+djangorestframework==3.15.2
+djangorestframework_simplejwt==5.4.0
+drf-standardized-errors==0.14.1
+drf-yasg==1.21.8
+flower==2.0.1
+gunicorn==23.0.0
+h11==0.16.0
+humanize==4.12.1
+idna==3.10
+inflection==0.5.1
+kombu==5.4.2
+Markdown==3.7
+packaging==24.2
+pilkit==3.0
+pillow==11.1.0
+prometheus_client==0.21.1
+prompt_toolkit==3.0.50
+psycopg2==2.9.10
+psycopg2-binary==2.9.10
+PyJWT==2.10.1
+python-crontab==3.2.0
 python-dateutil==2.9.0.post0
-requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1733217035951/work
-ruamel.yaml @ file:///Users/runner/miniforge3/conda-bld/ruamel.yaml_1728764996801/work
-ruamel.yaml.clib @ file:///Users/runner/miniforge3/conda-bld/ruamel.yaml.clib_1728724504988/work
-semantic-version==2.10.0
-setuptools==75.6.0
+pytz==2025.1
+PyYAML==6.0.2
+redis==5.2.1
+requests==2.32.3
 six==1.17.0
-smmap==5.0.2
-tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1732497199771/work
-truststore @ file:///home/conda/feedstock_root/build_artifacts/truststore_1729762363021/work
-urllib3 @ file:///home/conda/feedstock_root/build_artifacts/urllib3_1733206856906/work
-wheel==0.45.1
-zstandard==0.23.0
+sqlparse==0.5.3
+tornado==6.4.2
+tzdata==2025.1
+uritemplate==4.1.1
+urllib3==2.4.0
+uvicorn==0.34.3
+vine==5.1.0
+wcwidth==0.2.13
+whitenoise==6.9.0

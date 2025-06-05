@@ -3,6 +3,7 @@ from apps.accounts.models import User
 from shared.models import TimeStampedUUID
 from django.core.validators import FileExtensionValidator
 # from shared.validators import validate_blood_pressure
+from cloudinary.models import CloudinaryField
 from autoslug import AutoSlugField
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
@@ -13,6 +14,7 @@ import uuid
 from apps.organizations.models import Organization
 from apps.caregivers.models import Caregiver
 from .validators import validate_blood_pressure
+from cloudinary.models import CloudinaryField
 
 
 class Patient(TimeStampedUUID):
@@ -23,9 +25,16 @@ class Patient(TimeStampedUUID):
     medical_id = models.CharField(max_length=30, unique=True,blank=True,null=True)
     date_of_birth = models.DateField(blank=True,null=True)
     marital_status = models.CharField(max_length=30,choices=MaritalStatus.choices,verbose_name=_("Patient Marital Status"),blank=True,null=True)
-    profile_picture = ProcessedImageField(upload_to='patient_profile_pictures', default='default.png',processors=[ResizeToFill(100, 50)],
-                format='JPEG',options={'quality': 80},
-                validators=[ FileExtensionValidator(allowed_extensions=['jpg', 'png', 'jpeg'])],blank=True,null=True)
+    # profile_picture = ProcessedImageField(upload_to='patient_profile_pictures', default='default.png',processors=[ResizeToFill(100, 50)],
+    #             format='JPEG',options={'quality': 80},
+    #             validators=[ FileExtensionValidator(allowed_extensions=['jpg', 'png', 'jpeg'])],blank=True,null=True)
+    profile_picture = CloudinaryField(
+        'image',
+        folder='patient_profile_pictures',
+        default='default.png',
+        allowed_formats=['jpg', 'png', 'jpeg'],
+        transformation=[{'width': 100, 'height': 50, 'crop': 'fill', 'quality': 80}]
+    )
     gender = models.CharField(max_length=20,choices=Gender.choices,blank=True,null=True)
     phone_number=models.CharField(max_length=15,validators=[validate_phone_number],blank=True,null=True)
     emergency_phone_number=models.CharField(max_length=15,validators=[validate_phone_number],blank=True,null=True)
