@@ -1,7 +1,3 @@
-from .base import *
-import dj_database_url
-# Production-specific settings
-DEBUG=True
 
 
 # Production database settings
@@ -36,11 +32,12 @@ DATABASES = {
 CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS').split(' ')
 
 # Production email settings
-EMAIL_USE_TLS=True
-EMAIL_HOST=env('DEVELOPMENT_EMAIL_HOST')
-EMAIL_HOST_USER=env('DEVELOPMENT_EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD=env('DEVELOPMENT_EMAIL_HOST_PASSWORD')
-EMAIL_PORT=env('DEVELOPMENT_EMAIL_PORT')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = env('EMAIL_HOST')
+EMAIL_PORT = env('EMAIL_PORT')
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
 # Production security settings
 SECURE_SSL_REDIRECT = True
