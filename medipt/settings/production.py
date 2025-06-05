@@ -118,11 +118,14 @@ LOGGING = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "https://medipt-frontend.vercel.app",
+    # "https://medipt-frontend.vercel.app",
+    # "https://medipt-frontend-1nubiayaw-timthegreat.vercel.app",
+    "*"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://medipt-frontend.vercel.app",
+    # "https://medipt-frontend.vercel.app",
+    "*"
 ]
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage' 
