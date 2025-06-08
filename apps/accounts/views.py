@@ -43,9 +43,7 @@ class OrganizationSignupView(generics.GenericAPIView):
                 try:
                     send_organization_activation_email.delay(current_site_domain, organization_email)
                 except Exception as email_error:
-                    raise OrganizationVerificationEmailFailedException()
-                send_organization_activation_email.delay(current_site_domain, organization_email)
-    
+                    raise OrganizationVerificationEmailFailedException()    
                 return Response({"message": "Organization registered successfully","data":serializer.data}, status=status.HTTP_201_CREATED)
             except Exception as e:
                 raise OrganizationSignupException(detail=e.add_note("An unexpected error occurred. Please try again later."))

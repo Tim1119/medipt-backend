@@ -1,0 +1,82 @@
+databases:
+  - name: mediptdb
+    plan: free
+    databaseName: neondb
+    user: neondb_owner
+
+services:
+  - type: redis
+    name: medipt-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+  - type: web
+    name: medipt
+    plan: free
+    runtime: python
+    buildCommand: './build.sh'
+    startCommand: 'python -m gunicorn medipt.asgi:application -k uvicorn.workers.UvicornWorker'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mediptdb
+          property: connectionString
+      - key: SECRET_KEY
+        value: django-insecure-c4zh5y#g=%)3d3ic#9d+5lpuz(audz9jf3fq*8nkf5_%bf=vbe
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "medipt.onrender.com localhost 127.0.0.1 medipt-frontend.vercel.app"
+      - key: WEB_CONCURRENCY
+        value: "4"
+      - key: CLOUDINARY_CLOUD_NAME
+        value: du7mrdrin
+      - key: CLOUDINARY_API_KEY
+        value: "327917192738971"
+      - key: CLOUDINARY_API_SECRET
+        value: _Su-FYpVRyzArvScIX_ncHMvhGw
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://medipt-frontend.vercel.app
+      - key: REACT_FRONTEND_URL
+        value: https://medipt-frontend.vercel.app
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: medipt-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: medipt-redis
+          property: connectionString
+
+  - type: worker
+    name: medipt-worker
+    runtime: python
+    buildCommand: './build.sh'
+    startCommand: 'celery -A medipt worker --loglevel=info'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mediptdb
+          property: connectionString
+      - key: SECRET_KEY
+        value: django-insecure-c4zh5y#g=%)3d3ic#9d+5lpuz(audz9jf3fq*8nkf5_%bf=vbe
+      - key: DEBUG
+        value: "False"
+      - key: CLOUDINARY_CLOUD_NAME
+        value: du7mrdrin
+      - key: CLOUDINARY_API_KEY
+        value: "327917192738971"
+      - key: CLOUDINARY_API_SECRET
+        value: _Su-FYpVRyzArvScIX_ncHMvhGw
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: medipt-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: medipt-redis
+          property: connectionString
