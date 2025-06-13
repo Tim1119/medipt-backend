@@ -24,7 +24,10 @@ result_backend = app.conf.result_backend
 
 
 if urlparse(broker_url).scheme == 'rediss':
-    ssl_opts = {'ssl_cert_reqs': ssl.CERT_NONE}
+    ssl_opts = {
+    'ssl_cert_reqs': ssl.CERT_REQUIRED,
+    'ssl_ca_certs': '/etc/ssl/certs/ca-certificates.crt',  # Path depends on OS
+    }
     app.conf.broker_use_ssl = ssl_opts
     app.conf.redis_backend_use_ssl = ssl_opts
 
